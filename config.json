@@ -1,0 +1,40 @@
+{
+  "//": "smelltest policy. Every default is safe; anything aggressive is off by default. Edit to tune.",
+  "version": 1,
+  "bounds": {
+    "maxRevisions": 2,
+    "absoluteIterationCeiling": 4,
+    "oscillationGuard": true
+  },
+  "fastTier": {
+    "completionLexemes": [
+      "done", "complete", "completed", "implemented", "finished", "fixed",
+      "resolved", "all set", "ready to go", "verified", "tests pass",
+      "tests are passing", "passing now", "working now", "fully working"
+    ],
+    "confidenceLexemes": [
+      "definitely", "guaranteed", "certainly", "100%", "without a doubt",
+      "i've verified", "i verified", "i've tested", "i tested", "i confirmed",
+      "absolutely correct", "this will work"
+    ]
+  },
+  "slowTier": {
+    "enabled": false,
+    "citationResolveTimeoutMs": 4000,
+    "demoteUncited": true,
+    "echoSingleDomainWarn": true
+  },
+  "destructive": {
+    "enabled": true,
+    "patterns": [
+      "rm\\s+-[a-z]*r[a-z]*f", "rm\\s+-[a-z]*f[a-z]*r", "rm\\s+-[a-z]*r\\b.*\\*",
+      "git\\s+reset\\s+--hard", "git\\s+clean\\s+-[a-z]*f", "git\\s+checkout\\s+--\\s",
+      "git\\s+push\\s+--force(?!-with-lease)", "remove-item\\b.*-recurse",
+      "rmdir\\s+/s", "rd\\s+/s", "del\\s+/[a-z]*s", "mkfs", "dd\\s+if=",
+      "truncate\\s+-s\\s*0", ">\\s*/dev/sd", "format\\s+[a-z]:",
+      "rm\\s+.*--recursive", "shred\\b", "find\\s+.*-delete", "git\\s+branch\\s+-D"
+    ]
+  },
+  "ledgerPath": ".smelltest/ledger.jsonl",
+  "armedFlagPath": ".smelltest/armed"
+}

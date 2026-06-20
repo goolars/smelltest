@@ -1,0 +1,15 @@
+{
+  "name": "smelltest",
+  "version": "0.1.0",
+  "description": "A bounded, adversarial acceptance gate for Claude Code that re-grades the agent's own done/verified/cited claims with model-free code before you accept the turn.",
+  "type": "module",
+  "bin": { "smelltest": "bin/smell-cli.mjs" },
+  "scripts": {
+    "test": "node --test",
+    "smell": "node bin/smell-cli.mjs"
+  },
+  "keywords": ["claude-code", "hooks", "agents", "verification", "self-critique", "guardrails", "hallucination"],
+  "license": "MIT",
+  "author": "Lars Godoy",
+  "engines": { "node": ">=18" }
+}

@@ -1,0 +1,47 @@
+{
+  "rationale": "revised plan, detail in message",
+  "areas": [
+    {
+      "id": "A0",
+      "question": "provenance gate before build",
+      "whyItMatters": "tribunal stub",
+      "priority": 1
+    },
+    {
+      "id": "A1",
+      "question": "pre bash snapshot for deletes",
+      "whyItMatters": "strongest seam",
+      "priority": 2
+    },
+    {
+      "id": "A2",
+      "question": "open polling halt measure lag",
+      "whyItMatters": "next call only",
+      "priority": 3
+    },
+    {
+      "id": "A3",
+      "question": "cap fan out abort watchdog",
+      "whyItMatters": "no in flight abort",
+      "priority": 4
+    },
+    {
+      "id": "A4",
+      "question": "deterministic honesty flags",
+      "whyItMatters": "Claude free",
+      "priority": 5
+    },
+    {
+      "id": "A5",
+      "question": "residual gap or drop",
+      "whyItMatters": "Auto mode eats seam",
+      "priority": 6
+    },
+    {
+      "id": "A6",
+      "question": "incumbent gate pin contracts",
+      "whyItMatters": "install over native",
+      "priority": 7
+    }
+  ]
+}

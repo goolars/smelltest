@@ -1,0 +1,8 @@
+{
+  "name": "smelltest",
+  "description": "A bounded, adversarial acceptance gate for Claude Code: re-grades the agent's own done/verified/cited claims with model-free code before you accept the turn. Advisory by default; enforcement opt-in.",
+  "version": "0.1.0",
+  "author": { "name": "Lars Godoy" },
+  "license": "MIT",
+  "keywords": ["claude-code", "hooks", "verification", "self-critique", "guardrails", "agents"]
+}

@@ -1,0 +1,11 @@
+# Runtime audit trail + armed flag are per-project state, not framework.
+.smelltest/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+*.bak
