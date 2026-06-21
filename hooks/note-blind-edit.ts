@@ -11,7 +11,7 @@ async function main(): Promise<void> {
   const input = await readHookInput();
   try {
     const root = projectRoot(input);
-    const cfg = loadConfig();
+    const cfg = loadConfig(undefined, root); // merges this repo's .smelltest/config.json
     const ti = input.tool_input || {};
     const edited = String((ti.file_path as string) || (ti.path as string) || "");
     if (!edited) return;

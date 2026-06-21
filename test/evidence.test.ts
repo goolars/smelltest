@@ -154,3 +154,17 @@ test("config: a malformed override regex reverts to default instead of crashing 
   assert.equal(smell(ev as any, cfg).rung, "warn", "gate still runs (and catches) with reverted config");
   fs.rmSync(root, { recursive: true, force: true });
 });
+
+test("config: a project's .smelltest/config.json overrides DEFAULTS (the per-repo escape hatch)", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "smelltest-proj-"));
+  fs.mkdirSync(path.join(project, ".smelltest"));
+  fs.writeFileSync(
+    path.join(project, ".smelltest", "config.json"),
+    JSON.stringify({ disabledCodes: ["done.no_substance"], bounds: { maxRevisions: 5 } }),
+  );
+  const cfg = loadConfig(undefined, project);
+  assert.deepEqual(cfg.disabledCodes, ["done.no_substance"], "project disabledCodes is loaded");
+  assert.equal(cfg.bounds.maxRevisions, 5, "project bounds override is deep-merged");
+  assert.equal(cfg.bounds.oscillationGuard, DEFAULTS.bounds.oscillationGuard, "untouched keys keep DEFAULTS");
+  fs.rmSync(project, { recursive: true, force: true });
+});

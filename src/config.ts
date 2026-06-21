@@ -21,6 +21,10 @@ export interface Config {
   testFilePattern: string; // a file is a "test" file if its path matches this (regex source)
   skipMarkers: string[]; // added lines that disable a test (regex sources)
   assertionMarkers: string[]; // removed lines that drop an assertion (regex sources)
+  // Finding codes the human has chosen to silence in THIS repo (the false-positive escape
+  // hatch). A disabled code never warns; it is recorded as a notChecked gap, never dropped
+  // silently. Set per-repo in .smelltest/config.json, e.g. {"disabledCodes":["done.no_substance"]}.
+  disabledCodes: string[];
   ledgerPath: string;
   armedFlagPath: string;
 }
@@ -181,6 +185,7 @@ export const DEFAULTS: Config = {
     "\\.to(Be|Equal|Match|Throw|Have)",
     "\\brequire\\.(Equal|True|NoError)\\b",
   ],
+  disabledCodes: [],
   ledgerPath: ".smelltest/ledger.jsonl",
   armedFlagPath: ".smelltest/armed",
 };
@@ -220,17 +225,33 @@ function validateConfig(cfg: Config): Config {
   if (!cfg.skipMarkers.length) cfg.skipMarkers = DEFAULTS.skipMarkers;
   cfg.assertionMarkers = (cfg.assertionMarkers || []).filter(validRegex);
   if (!cfg.assertionMarkers.length) cfg.assertionMarkers = DEFAULTS.assertionMarkers;
+  // A malformed disabledCodes (non-array, or non-string entries) must not crash the kernel's
+  // .includes() — coerce to a clean string[].
+  cfg.disabledCodes = Array.isArray(cfg.disabledCodes)
+    ? cfg.disabledCodes.filter((x): x is string => typeof x === "string")
+    : [];
   return cfg;
 }
 
-export function loadConfig(root?: string): Config {
-  const dir = root || process.env.CLAUDE_PLUGIN_ROOT || "";
+function mergeFile(cfg: Config, file: string): Config {
   try {
-    const raw = JSON.parse(fs.readFileSync(path.join(dir, "config.json"), "utf8"));
-    return validateConfig(deepMerge(DEFAULTS, raw));
+    return deepMerge(cfg, JSON.parse(fs.readFileSync(file, "utf8")));
   } catch {
-    return DEFAULTS;
+    return cfg; // absent or malformed file: leave the layer untouched (fail-open)
   }
+}
+
+// Two layers, low → high precedence: DEFAULTS → plugin-root config.json (ships with the
+// plugin) → the project's own .smelltest/config.json (per-repo human overrides win). The
+// project layer is what a user edits to tune or silence a finding in their repo.
+export function loadConfig(pluginRoot?: string, projectRoot?: string): Config {
+  const pluginDir = pluginRoot || process.env.CLAUDE_PLUGIN_ROOT || "";
+  // Shallow clone so validateConfig's top-level reassignments never mutate the shared DEFAULTS
+  // when no override file is present (deepMerge already returns fresh objects on the file paths).
+  let cfg: Config = { ...DEFAULTS };
+  if (pluginDir) cfg = mergeFile(cfg, path.join(pluginDir, "config.json"));
+  if (projectRoot) cfg = mergeFile(cfg, path.join(projectRoot, ".smelltest", "config.json"));
+  return validateConfig(cfg);
 }
 
 export function projectRoot(input?: { cwd?: string }): string {

@@ -96,6 +96,33 @@ test("ledger: the bound actually halts (executing halt-proof)", () => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test("disabledCodes: the FP escape hatch silences a finding into a notChecked, never silently", () => {
+  const ev = {
+    finalMessage: "Implemented the login feature.",
+    diff: {
+      available: true,
+      isEmpty: false,
+      filesTouched: ["a.js"],
+      hunks: [{ file: "a.js", addedLines: ["// only a comment, nothing real", "   "], removedLines: [] }],
+    },
+    scope: { filesRead: ["a.js"], filesEdited: ["a.js"] },
+  } as unknown as Evidence;
+
+  // Default: the empty-substance claim warns.
+  const base = smell(ev, DEFAULTS);
+  assert.equal(base.rung, "warn");
+  assert.ok(base.codes.includes("done.no_substance"), "fires done.no_substance by default");
+
+  // With the human's per-repo override it must NOT warn — but must still be auditable.
+  const tuned = smell(ev, { ...DEFAULTS, disabledCodes: ["done.no_substance"] });
+  assert.equal(tuned.rung, "pass", "a disabled code cannot warn");
+  assert.ok(!tuned.codes.includes("done.no_substance"), "disabled code is not in the active findings");
+  assert.ok(
+    tuned.notChecked.some((n) => n.code === "done.no_substance"),
+    "disabled code is recorded as a notChecked gap — silenced, never silent",
+  );
+});
+
 test("ledger: oscillation guard + session-independent ceiling", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "smelltest-"));
   ledger.append(root, DEFAULTS, { event: "block", sessionId: "S", codes: ["done.no_substance"] });

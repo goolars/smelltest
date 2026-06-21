@@ -10,7 +10,17 @@ import type { Evidence, Verdict } from "./types.ts";
 
 export function smell(ev: Evidence, cfg: Config): Verdict {
   const claims = extractClaims(ev?.finalMessage || "", cfg);
-  const { findings, notChecked } = reconcile(claims, ev, cfg);
+  const raw = reconcile(claims, ev, cfg);
+  // Per-repo false-positive escape hatch: a code in cfg.disabledCodes never warns. It is NOT
+  // dropped silently — it moves to notChecked so the audit trail shows the human turned it off.
+  const disabled = new Set(cfg.disabledCodes ?? []);
+  const findings = raw.findings.filter((f) => !disabled.has(f.code));
+  const notChecked = [
+    ...raw.notChecked,
+    ...raw.findings
+      .filter((f) => disabled.has(f.code))
+      .map((f) => ({ code: f.code, reason: "suppressed by .smelltest/config.json (disabledCodes)" })),
+  ];
   const warn = findings.some((f) => f.severity === "warn");
   return {
     rung: warn ? "warn" : "pass",

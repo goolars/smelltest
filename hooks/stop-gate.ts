@@ -19,7 +19,7 @@ async function main(): Promise<void> {
   };
   try {
     const root = projectRoot(input);
-    const cfg = loadConfig();
+    const cfg = loadConfig(undefined, root); // merges this repo's .smelltest/config.json
     if (!fs.existsSync(path.join(root, cfg.armedFlagPath))) process.exit(0); // advisory by default
 
     if (input.hook_event_name === "SubagentStop" && input.agent_type === "smell-critic") process.exit(0);
