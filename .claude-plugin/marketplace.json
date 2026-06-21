@@ -1,0 +1,14 @@
+{
+  "name": "smelltest-marketplace",
+  "owner": { "name": "Lars Godoy" },
+  "plugins": [
+    {
+      "name": "smelltest",
+      "source": "./",
+      "description": "A model-free, zero-dependency Claude Code Stop gate that bounds its own retries (the fuse) and re-grades done/tests-pass claims against the structure of the git diff. Advisory by default.",
+      "license": "MIT",
+      "category": "development",
+      "keywords": ["hooks", "verification", "guardrails", "loop-safety", "self-critique"]
+    }
+  ]
+}

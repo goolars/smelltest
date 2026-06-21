@@ -1,6 +1,6 @@
 {
   "name": "smelltest",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A model-free, zero-dependency Claude Code Stop gate that bounds its own retries (the fuse) and re-grades 'done / tests-pass' against the STRUCTURE of the git diff. Advisory by default.",
   "type": "module",
   "bin": { "smelltest": "src/cli.ts" },

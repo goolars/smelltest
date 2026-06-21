@@ -48,8 +48,32 @@ export const DEFAULTS: Config = {
     sql: ['--'], lua: ['--'], css: ['/*', '*'], scss: ['//', '/*', '*'],
   },
   testFilePattern: '(^|[/\\\\])(tests?|spec|__tests__)([/\\\\])|\\.(test|spec)\\.[a-z0-9]+$|_test\\.[a-z0-9]+$',
-  skipMarkers: ['\\.skip\\b', '\\.only\\b', '\\bxit\\b', '\\bxdescribe\\b', '@pytest\\.mark\\.skip', '@unittest\\.skip', '\\bt\\.Skip\\b', '#\\[ignore\\]'],
-  assertionMarkers: ['\\bassert\\w*\\b', '\\bexpect\\s*\\(', '\\bshould\\b', '\\.to(Be|Equal|Match|Throw|Have)', '\\brequire\\.(Equal|True|NoError)\\b'],
+  // Per-ecosystem skip/focus/disable idioms, each anchored to its call/decorator form to keep
+  // precision (a bare word would false-positive on identifiers/comments — guarded by FP-bait
+  // corpus cases). Deliberately EXCLUDES .failing, #[should_panic], and JUnit assume* (those
+  // are legitimate conditions, not test-disabling). Idioms cross-checked against framework docs
+  // (Go testing BSD-3, testify MIT, pytest MIT, unittest PSF, JUnit5 EPL-2.0 API-fact-only,
+  // RSpec MIT, Rust reference MIT/Apache, eslint-plugin-jest MIT) — see CREDITS.md, all idea-only.
+  skipMarkers: [
+    // JS / TS (jest, vitest, mocha, jasmine)
+    '\\.skip\\b', '\\.only\\b', '\\.todo\\b', '\\.skipIf\\b', '\\.runIf\\b',
+    '\\bxit\\s*\\(', '\\bxtest\\s*\\(', '\\bxdescribe\\b', '\\bfdescribe\\s*\\(', '\\bfcontext\\s*\\(', '\\bfit\\s*\\(',
+    '\\bthis\\.skip\\s*\\(', '^\\s*pending\\s*\\(',
+    // Python (pytest, unittest)
+    '@(?:pytest\\.mark\\.)?(?:skip|skipif|xfail)\\b', '\\bpytest\\.(?:skip|xfail|importorskip)\\s*\\(',
+    '@(?:unittest\\.)?(?:skip|skipIf|skipUnless|expectedFailure)\\b', '\\.skipTest\\s*\\(',
+    // Go (testing + testify; receiver-agnostic so t.Skip/t.SkipNow/t.Skipf/s.T().Skip all match)
+    '\\.Skip(?:Now|f)?\\s*\\(',
+    // Rust (#[ignore] with optional reason)
+    '#\\[\\s*ignore',
+    // JVM (JUnit5 @Disabled, JUnit4 @Ignore)
+    '@Disabled\\b', '@Ignore\\b',
+    // RSpec (xexample/xcontext/xspecify, focus f-variants)
+    '\\bx(?:context|specify|example)\\b', '\\bf(?:it|describe|context)\\s*\\(',
+  ],
+  // Assertion shapes (removed -> weakened suite). 'should' is anchored to the Chai/RSpec call
+  // forms ('.should', 'should_receive') — the bare word false-positives on comments/identifiers.
+  assertionMarkers: ['\\bassert\\w*\\b', '\\bexpect\\s*\\(', '\\.should\\b', '\\bshould_receive\\b', '\\.to(Be|Equal|Match|Throw|Have)', '\\brequire\\.(Equal|True|NoError)\\b'],
   ledgerPath: '.smelltest/ledger.jsonl',
   armedFlagPath: '.smelltest/armed',
 };
@@ -68,11 +92,25 @@ function deepMerge<T>(base: T, over: unknown): T {
   return out as T;
 }
 
+function validRegex(src: string): boolean { try { new RegExp(src, 'i'); return true; } catch { return false; } }
+
+// A malformed user-overridden pattern must NOT crash the Stop hook: bad fields revert to
+// DEFAULTS. (Verified: an unbalanced testFilePattern throws an uncaught SyntaxError at the
+// `new RegExp(...)` in detectTestTamper without this.)
+function validateConfig(cfg: Config): Config {
+  if (!validRegex(cfg.testFilePattern)) cfg.testFilePattern = DEFAULTS.testFilePattern;
+  cfg.skipMarkers = (cfg.skipMarkers || []).filter(validRegex);
+  if (!cfg.skipMarkers.length) cfg.skipMarkers = DEFAULTS.skipMarkers;
+  cfg.assertionMarkers = (cfg.assertionMarkers || []).filter(validRegex);
+  if (!cfg.assertionMarkers.length) cfg.assertionMarkers = DEFAULTS.assertionMarkers;
+  return cfg;
+}
+
 export function loadConfig(root?: string): Config {
   const dir = root || process.env.CLAUDE_PLUGIN_ROOT || '';
   try {
     const raw = JSON.parse(fs.readFileSync(path.join(dir, 'config.json'), 'utf8'));
-    return deepMerge(DEFAULTS, raw);
+    return validateConfig(deepMerge(DEFAULTS, raw));
   } catch {
     return DEFAULTS;
   }

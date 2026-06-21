@@ -17,23 +17,80 @@ function isOurs(p: string): boolean {
   return /^\.smelltest(\/|$)/.test(s) || /^\.git(\/|$)/.test(s);
 }
 
-function parseUnifiedDiff(text: string): DiffHunk[] {
+// Decode a git C-quoted path (core.quotePath): "b/caf\303\251.ts" -> b/café.ts. Octal runs are
+// bytes; the whole byte sequence is decoded as UTF-8. (git's documented quoting; idea-only.)
+function unquotePath(p: string): string {
+  if (p.length < 2 || p[0] !== '"' || p[p.length - 1] !== '"') return p;
+  const inner = p.slice(1, -1);
+  const bytes: number[] = [];
+  for (let i = 0; i < inner.length; i++) {
+    if (inner[i] === '\\' && i + 1 < inner.length) {
+      const n = inner[i + 1];
+      if (n === 't') { bytes.push(9); i++; }
+      else if (n === 'n') { bytes.push(10); i++; }
+      else if (n === 'r') { bytes.push(13); i++; }
+      else if (n === '\\') { bytes.push(92); i++; }
+      else if (n === '"') { bytes.push(34); i++; }
+      else if (n >= '0' && n <= '7') { bytes.push(parseInt(inner.slice(i + 1, i + 4), 8) & 0xff); i += 3; }
+      else { bytes.push(inner.charCodeAt(i)); }
+    } else {
+      bytes.push(inner.charCodeAt(i) & 0xff);
+    }
+  }
+  try { return Buffer.from(bytes).toString('utf8'); } catch { return inner; }
+}
+
+function stripPrefix(p: string): string { return p.replace(/^[abiwco12]\//, ''); }
+
+// Two-mode (header / body) state machine. The file path comes from the AUTHORITATIVE '+++ '
+// (or 'rename to') line, NOT the ambiguous `diff --git a/.. b/..` (which mis-captures on paths
+// containing spaces or a literal " b/"). Handles rename/copy, new/deleted (/dev/null), binary,
+// mode-only, combined (--cc / @@@) diffs, and the "\ No newline" marker. Idea-only re-implementation
+// of the concepts in parse-diff & gitdiff-parser (both MIT) + git's documented format — see CREDITS.md.
+export function parseUnifiedDiff(text: string): DiffHunk[] {
   const hunks: DiffHunk[] = [];
   let cur: DiffHunk | null = null;
+  let mode: 'header' | 'body' | 'skip' = 'header';
+
   for (const line of text.split('\n')) {
-    if (line.startsWith('diff --git')) {
-      const m = / b\/(.+)$/.exec(line);
-      cur = { file: m ? m[1] : '', addedLines: [], removedLines: [] };
+    if (line.startsWith('diff --git') || line.startsWith('diff --cc') || line.startsWith('diff --combined')) {
+      cur = { file: '', addedLines: [], removedLines: [] };
       hunks.push(cur);
-    } else if (!cur) {
+      mode = 'header';
+      if (!line.startsWith('diff --git ')) cur.combined = true;
+      const m = / b\/(.+)$/.exec(line);
+      if (m) cur.file = stripPrefix(unquotePath(m[1].trim())); // fallback only; '+++' overrides
       continue;
-    } else if (line.startsWith('+++') || line.startsWith('---')) {
-      continue;
-    } else if (line.startsWith('+')) {
-      cur.addedLines.push(line.slice(1));
-    } else if (line.startsWith('-')) {
-      cur.removedLines.push(line.slice(1));
     }
+    if (!cur) continue;
+    if (mode === 'skip') continue;
+
+    if (mode === 'header') {
+      if (line.startsWith('--- ')) {
+        const p = line.slice(4).trim();
+        if (p !== '/dev/null') cur.oldPath = stripPrefix(unquotePath(p));
+        continue;
+      }
+      if (line.startsWith('+++ ')) {
+        const p = line.slice(4).trim();
+        if (p === '/dev/null') { cur.deleted = true; if (cur.oldPath) cur.file = cur.oldPath; }
+        else cur.file = stripPrefix(unquotePath(p));
+        continue;
+      }
+      if (line.startsWith('rename from ') || line.startsWith('copy from ')) { cur.renamedFrom = unquotePath(line.replace(/^(rename|copy) from /, '').trim()); continue; }
+      if (line.startsWith('rename to ') || line.startsWith('copy to ')) { cur.file = unquotePath(line.replace(/^(rename|copy) to /, '').trim()); continue; }
+      if (line.startsWith('deleted file mode')) { cur.deleted = true; continue; }
+      if (line.startsWith('Binary files') || line.startsWith('GIT binary patch')) { cur.binary = true; mode = 'skip'; continue; }
+      if (line.startsWith('@@@')) { cur.combined = true; mode = 'skip'; continue; }
+      if (line.startsWith('@@')) { mode = 'body'; continue; }
+      continue; // index / old mode / new mode / similarity / etc.
+    }
+
+    // body mode — at --unified=0 there are no context lines
+    if (line.startsWith('@@@')) { cur.combined = true; mode = 'skip'; continue; }
+    if (line.startsWith('\\')) continue;             // "\ No newline at end of file" — not content
+    if (line.startsWith('+')) { cur.addedLines.push(line.slice(1)); continue; }
+    if (line.startsWith('-')) { cur.removedLines.push(line.slice(1)); continue; }
   }
   return hunks;
 }
@@ -64,7 +121,11 @@ export function gitDiffInfo(root: string): DiffInfo {
     try {
       const abs = path.join(root, f);
       if (fs.existsSync(abs) && fs.statSync(abs).isFile()) {
-        hunks.push({ file: f, addedLines: fs.readFileSync(abs, 'utf8').split('\n'), removedLines: [] });
+        const buf = fs.readFileSync(abs);
+        const isBinary = buf.subarray(0, 8192).includes(0); // NUL byte => binary, not 0 lines of "code"
+        hunks.push(isBinary
+          ? { file: f, addedLines: [], removedLines: [], binary: true }
+          : { file: f, addedLines: buf.toString('utf8').split('\n'), removedLines: [] });
       }
     } catch { /* skip */ }
   }

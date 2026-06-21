@@ -35,30 +35,36 @@ tops out at `warn`; arming turns a warn into a *bounded* block.
 
 ### Measured (internal regression floor, not an external benchmark)
 
-`node eval/run.ts` on a 20-case adversarial corpus: **precision 100% · recall 100% · 0 false
-positives**, with a published **false-negative floor of 2** documented evasions (a neutral
-completion with no claim verb; a function signature whose body is a stub). These measure *the
+`node eval/run.ts` on a 35-case adversarial corpus (incl. real per-framework test-tamper idioms
+and false-positive baits): **precision 100% · recall 100% · 0 false positives**, with a published
+**false-negative floor of 2** documented evasions (a neutral completion with no claim verb; a
+function signature whose body is a stub). These measure *the
 author's imagination of attacks*, not real-world evasion — they are a regression floor, not a
 catch-rate proof. The honest ceiling: model-free structure confirms the diff *changed in a way
 consistent with the claim*; it cannot confirm the code *does* what was claimed. A determined
 agent can pad inert-but-real lines past the line classifier. That is why `done.no_substance`
 is **warn, never a hard block**, until a false-positive rate is published for a stricter mode.
 
-## Quick start
+## Install
+
+**As a Claude Code plugin (primary):**
+
+```
+/plugin marketplace add <owner>/smelltest
+/plugin install smelltest@smelltest-marketplace
+```
+
+Then `/smell` (advisory — changes nothing), `/smell-loop on` (arm bounded enforcement),
+`/smell-loop off`. Requires Node ≥ 22.6 (the hooks run the `.ts` directly); `npm run build`
+produces a Node-18 `dist/` bundle.
+
+**From source (contributors / zero-marketplace):**
 
 ```bash
 git clone <repo> && cd smelltest
-node --test            # 8 suites incl. the executing halt-proof (Node >= 22.6)
-node eval/run.ts       # prints precision / recall / FN floor
-```
-
-As a Claude Code plugin (Node >= 22.6 runs the `.ts` hooks directly; `npm run build` produces
-a Node-18 `dist/` bundle):
-
-```
-/smell           # re-grade the last turn (advisory — changes nothing)
-/smell-loop on   # arm enforcement: blocks at most 2 bounded revisions, fail-open
-/smell-loop off  # disarm
+node --test            # 18 suites incl. the executing halt-proof + diff-parser edge cases
+node eval/run.ts       # precision / recall / FN floor over the adversarial corpus
+node install.mjs --project /your/app   # wire the hooks into a project's .claude/
 ```
 
 ## Safety model

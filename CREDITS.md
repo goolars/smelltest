@@ -61,8 +61,48 @@ under `third_party/`.
 - File-level stub / TODO "slop" signals — convergent with smelltest's line-level substance
   classifier (we classify added diff lines, not whole files).
 
+## v0.3 hardening sources (idea-only, no code copied)
+
+### parse-diff — https://github.com/sergeyt/parse-diff
+- **License:** MIT © 2014 Sergey Todyshev · **Borrow:** idea-only
+- The concept of deriving a file's path from the **authoritative `+++ ` line** (with `a/`/`b/`…
+  prefix-strip) rather than the ambiguous `diff --git` line. Re-implemented from scratch in
+  `src/evidence.ts parseUnifiedDiff` — the disambiguation regex was **not** copied.
+
+### gitdiff-parser — https://github.com/ecomfe/gitdiff-parser
+- **License:** MIT © 2020 Baidu EFE · **Borrow:** idea-only
+- Header split-on-space dispatch + `isBinary` + `/dev/null` add/delete inference + rename
+  framing **concepts**. Re-implemented in `src/evidence.ts` and the binary/deleted/renamed
+  buckets in `src/substance.ts`.
+
+### git diff-format docs — https://git-scm.com/docs/diff-format
+- **License:** N/A (documented format, no code) · **Borrow:** idea-only
+- Combined-diff (`--cc` / `@@@`) recognition, `core.quotePath` C-quoting output, and the
+  rename `a/`=source `b/`=destination framing.
+
+### pre-commit — https://github.com/pre-commit/pre-commit (incl. identify)
+- **License:** MIT © pre-commit dev team / © 2017 Chris Kuehl, Anthony Sottile · **Borrow:** idea-only
+- Validate-config-at-load + never-silent-zero-match (`src/config.ts validateConfig`,
+  `test-selector-miss`); identify's NAMES→EXTENSIONS→shebang **layering** concept noted for a
+  future hand-authored table (the ~800-entry table is **not** imported).
+
+### lefthook — https://github.com/evilmartians/lefthook
+- **License:** MIT © 2019 Arkweid · **Borrow:** idea-only
+- Binary file-type concept and validate-at-load DX. (No code; Go → not portable anyway.)
+
+### Test-framework skip/disable idioms (API facts only, no code)
+The `skipMarkers` / `assertionMarkers` in `src/config.ts` are **hand-authored** from each
+framework's documented idioms:
+- **Go testing** — BSD-3-Clause (`Skip`/`SkipNow`/`Skipf`) · **stretchr/testify** — MIT
+  (`s.T().Skip` routes through the embedded `*testing.T`) · **eslint-plugin-jest** — MIT © 2018
+  Jonathan Kim (canonical JS skip/focus idiom enumeration) · **pytest** — MIT
+  (`@pytest.mark.skip/skipif/xfail`) · **Python unittest** — PSF docs · **RSpec** — MIT
+  (`x`/`f` variants) · **Rust Reference** — MIT/Apache-2.0 (`#[ignore]` optional reason) ·
+  **JUnit 5** — **EPL-2.0 (weak copyleft): PRINCIPLE / API-FACT ONLY** — the `@Disabled`/`@Ignore`
+  *names* are documented API facts; **no JUnit source was read or copied.**
+
+All idea-only. smelltest copies no third-party code and stays clean MIT.
+
 ---
 
-*This file is maintained as a hard requirement, not a courtesy: see [LICENSING.md](LICENSING.md).
-A deeper source-level study (reading each codebase) is in progress and will refine the
-"what we learned" notes and surface any additional, license-cleared borrows.*
+*This file is a hard requirement, not a courtesy: see [LICENSING.md](LICENSING.md).*

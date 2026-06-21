@@ -43,6 +43,7 @@ export function classifyDiff(diff: DiffInfo, cfg: Config): SubstanceResult {
   const unsupported: string[] = [];
   const classified: string[] = [];
   for (const h of diff.hunks || []) {
+    if (h.binary || h.combined) continue; // binary = its own bucket (not a parse failure); combined handled as notChecked
     const prefixes = cfg.commentPrefixes[extOf(h.file)];
     if (!prefixes) { unsupported.push(h.file); continue; } // never silently count as 0
     classified.push(h.file);
@@ -64,6 +65,16 @@ export function detectTestTamper(diff: DiffInfo, cfg: Config): TamperResult {
   const testFiles: string[] = [];
 
   for (const h of diff.hunks || []) {
+    // Whole-test-file DELETION is the strongest tamper signal — independent of assertion counting.
+    if (h.deleted && testRe.test(h.oldPath || h.file)) {
+      const p = h.oldPath || h.file;
+      signals.push(`deleted test file ${p}`); if (!testFiles.includes(p)) testFiles.push(p); continue;
+    }
+    // Test RENAMED out of the test path (dodges the suite without touching assertions).
+    if (h.renamedFrom && testRe.test(h.renamedFrom) && !testRe.test(h.file)) {
+      signals.push(`test file renamed out of the test path: ${h.renamedFrom} -> ${h.file}`); continue;
+    }
+    if (h.binary || h.combined) continue;
     if (!testRe.test(h.file)) continue;
     if (!testFiles.includes(h.file)) testFiles.push(h.file);
     const removedAsserts = h.removedLines.filter((l) => assertRe.test(l)).length;

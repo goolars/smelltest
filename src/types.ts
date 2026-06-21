@@ -15,9 +15,14 @@ export interface Claim {
 }
 
 export interface DiffHunk {
-  file: string;
+  file: string;           // post-image path, from the authoritative '+++ ' / 'rename to' line
   addedLines: string[];   // content of '+' lines (header lines excluded)
   removedLines: string[]; // content of '-' lines
+  binary?: boolean;       // Binary files / GIT binary patch — never counts as substance
+  deleted?: boolean;      // +++ /dev/null or 'deleted file mode'
+  renamedFrom?: string;   // 'rename from' source path
+  oldPath?: string;       // pre-image path (for deletions/renames)
+  combined?: boolean;     // diff --cc / @@@ merge diff — body skipped, recorded as notChecked
 }
 
 export interface DiffInfo {
