@@ -104,6 +104,11 @@ eval/          run.ts + corpus/cases.json (adversarial)      test/  smell.test.t
 .github/ci.yml  tsconfig.json  biome.json  SMOKE-TEST.md  research/
 ```
 
-## License
+## Credits & license
+
+Built by studying excellent prior art (tdd-guard, swarm-orchestrator, danger-js, husky,
+ast-grep, Guardrails AI, and others) — every borrow is idea-only and credited in
+[CREDITS.md](CREDITS.md), under the policy in [LICENSING.md](LICENSING.md). smelltest copies no
+third-party code and stays clean MIT.
 
 MIT © 2026 Lars Godoy
