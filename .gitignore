@@ -1,7 +1,8 @@
-# Runtime audit trail + armed flag are per-project state, not framework.
+# Runtime state (ledger + armed flag) is per-project, not framework.
 .smelltest/
 
-# Node
+# Build output + deps
+dist/
 node_modules/
 npm-debug.log*
 

@@ -1,18 +1,11 @@
 {
+  "//": "smelltest hooks. Stop/SubagentStop run the structural gate (inert unless armed). PostToolUse notes blind edits. The destructive-command guard was spun out (orthogonal security niche). Requires Node >=22.6 to run .ts directly, or `npm run build` for a Node-18 dist (see README).",
   "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/guard-destructive.mjs\"", "timeout": 10 }
-        ]
-      }
-    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write|NotebookEdit",
         "hooks": [
-          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/note-blind-edit.mjs\"", "timeout": 10 }
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/note-blind-edit.ts\"", "timeout": 10 }
         ]
       }
     ],
@@ -20,7 +13,7 @@
       {
         "matcher": "",
         "hooks": [
-          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/stop-gate.mjs\"", "timeout": 15 }
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/stop-gate.ts\"", "timeout": 15 }
         ]
       }
     ],
@@ -28,7 +21,7 @@
       {
         "matcher": "",
         "hooks": [
-          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/stop-gate.mjs\"", "timeout": 15 }
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/stop-gate.ts\"", "timeout": 15 }
         ]
       }
     ]

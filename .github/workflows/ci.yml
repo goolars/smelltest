@@ -1,0 +1,31 @@
+name: ci
+on: [push, pull_request]
+
+jobs:
+  test:
+    # Tests run on Node 24 (native TS type-stripping) on BOTH OSes — proves the Windows
+    # path-normalization the code does but the author can't test locally on CI's Linux.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm install
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: node --test
+      - run: node eval/run.ts
+
+  build-node18:
+    # Proves the esbuild bundle targets Node 18 (the supported floor for the built artifact).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install
+      - run: npm run build

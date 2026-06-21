@@ -1,15 +1,25 @@
 {
   "name": "smelltest",
-  "version": "0.1.0",
-  "description": "A bounded, adversarial acceptance gate for Claude Code that re-grades the agent's own done/verified/cited claims with model-free code before you accept the turn.",
+  "version": "0.2.0",
+  "description": "A model-free, zero-dependency Claude Code Stop gate that bounds its own retries (the fuse) and re-grades 'done / tests-pass' against the STRUCTURE of the git diff. Advisory by default.",
   "type": "module",
-  "bin": { "smelltest": "bin/smell-cli.mjs" },
+  "bin": { "smelltest": "src/cli.ts" },
+  "engines": { "node": ">=22.6" },
   "scripts": {
     "test": "node --test",
-    "smell": "node bin/smell-cli.mjs"
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "eval": "node eval/run.ts",
+    "build": "node scripts/build.mjs",
+    "smelltest": "node src/cli.ts"
   },
-  "keywords": ["claude-code", "hooks", "agents", "verification", "self-critique", "guardrails", "hallucination"],
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.3"
+  },
+  "keywords": ["claude-code", "hooks", "agents", "verification", "guardrails", "completion-check", "loop-safety", "self-critique"],
   "license": "MIT",
-  "author": "Lars Godoy",
-  "engines": { "node": ">=18" }
+  "author": "Lars Godoy"
 }

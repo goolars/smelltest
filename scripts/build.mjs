@@ -1,0 +1,16 @@
+// Bundle the TS sources to a zero-runtime-dependency Node-18 ESM artifact in dist/.
+// The unbundled .ts runs directly on Node >=22.6 (type stripping); this build is for the
+// Node-18 path and for shipping a single auditable file per entry. Requires `npm install`.
+import { build } from 'esbuild';
+
+await build({
+  entryPoints: ['src/cli.ts', 'hooks/stop-gate.ts', 'hooks/note-blind-edit.ts'],
+  outdir: 'dist',
+  bundle: true,
+  platform: 'node',
+  format: 'esm',
+  target: 'node18',
+  outExtension: { '.js': '.mjs' },
+  // node: built-ins only — there are no third-party runtime deps to externalize.
+});
+console.log('built dist/ (node18 ESM, zero runtime dependencies)');

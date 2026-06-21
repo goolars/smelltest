@@ -1,20 +1,16 @@
 ---
-description: Arm or disarm smelltest enforcement (auto-block on Stop) for this project
+description: Arm or disarm smelltest enforcement (bounded auto-block on Stop)
 argument-hint: [on|off]
 ---
 
-Toggle smelltest enforcement based on "$ARGUMENTS".
+Toggle enforcement based on "$ARGUMENTS".
 
-- If "$ARGUMENTS" is `on` or empty: run
-  `node "${CLAUDE_PLUGIN_ROOT}/bin/smell-cli.mjs" arm`
-  then tell me enforcement is ON and state the bound plainly: the Stop gate will block at
-  most **maxRevisions** times (default 2) when a completion claim fails the deterministic
-  checks, then it allows the stop. It fails open on any error. Audit trail: `.smelltest/ledger.jsonl`.
-- If "$ARGUMENTS" is `off`: run
-  `node "${CLAUDE_PLUGIN_ROOT}/bin/smell-cli.mjs" disarm`
-  and confirm enforcement is OFF (advisory only).
+- If `on` or empty: run `node "${CLAUDE_PLUGIN_ROOT}/src/cli.ts" arm`, then state the bound
+  plainly: when a completion claim is not backed by the diff, the Stop gate blocks at most
+  **maxRevisions** (default 2) bounded revisions, then allows the stop. Fail-open on any error.
+  Audit trail: `.smelltest/ledger.jsonl`.
+- If `off`: run `node "${CLAUDE_PLUGIN_ROOT}/src/cli.ts" disarm` and confirm advisory-only.
 
-Be explicit that this is the opt-in step: until armed, smelltest never blocks — it only
-annotates via `/smell`. Arming spends a little extra per turn (one fast `node` run on Stop)
-and can cost at most a couple of bounded revisions. That is the whole safety story: it can
-never become the runaway loop it was built to catch.
+Opt-in by design: until armed, smelltest never blocks — it only annotates via `/smell`. The
+ledger fuse (per-session cap + session-independent ceiling + oscillation guard) means it can
+never become the runaway loop it exists to catch.
