@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 520" width="820" height="520" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14">
+  <style>
+    .t { fill: #c9d1d9; }
+    .dim { fill: #8b949e; }
+    .cmt { fill: #6e7681; }
+    .grn { fill: #3fb950; }
+    .prompt { fill: #56d364; }
+    .cyan { fill: #39c5cf; }
+    .red { fill: #f85149; }
+    .reddim { fill: #ff7b72; }
+    .yel { fill: #d29922; }
+  </style>
+
+  <rect x="0.5" y="0.5" width="819" height="519" rx="10" fill="#0d1117" stroke="#30363d"/>
+  <rect x="0.5" y="0.5" width="819" height="36" rx="10" fill="#161b22"/>
+  <rect x="0.5" y="26" width="819" height="11" fill="#161b22"/>
+  <circle cx="22" cy="18" r="6" fill="#ff5f56"/>
+  <circle cx="42" cy="18" r="6" fill="#ffbd2e"/>
+  <circle cx="62" cy="18" r="6" fill="#27c93f"/>
+  <text x="410" y="23" text-anchor="middle" class="dim">smelltest — model-free Stop gate</text>
+
+  <g>
+    <text x="20" y="74"><tspan class="prompt">$ </tspan><tspan class="t">smelltest arm</tspan></text>
+    <text x="20" y="99" class="dim">smelltest enforcement ARMED.  Bounded: max 2 revisions, fail-open.</text>
+
+    <text x="20" y="139" class="cmt"># the agent ends its turn:  "Implemented the feature. Tests pass."</text>
+    <text x="20" y="161" class="cmt"># but the only change in the diff is a comment:</text>
+    <text x="20" y="183"><tspan class="grn">  + </tspan><tspan class="cmt">// TODO: wire this up</tspan></text>
+
+    <text x="20" y="223" class="cyan">⟳  Stop hook → smelltest   (no model, no network, runs on every Stop)</text>
+    <text x="20" y="248" class="red">{ "decision": "block", "reason":</text>
+    <text x="20" y="270" class="reddim">    • [done.no_substance] Claimed completion ("implemented") but the</text>
+    <text x="20" y="292" class="reddim">      diff added 0 substantive lines (non-blank, non-comment, …) }</text>
+
+    <text x="20" y="332" class="cmt"># the agent makes the REAL change, claims done again →</text>
+    <text x="20" y="354" class="grn">✓  smelltest: PASS    (never certifies "verified" — it can only fail to find a problem)</text>
+
+    <text x="20" y="394" class="cmt"># if it instead loops on the same empty claim, the self-owned fuse trips:</text>
+    <text x="20" y="416"><tspan class="yel">smelltest: revision cap (2) reached — allowing stop.</tspan><tspan class="dim">   ← cannot run away</tspan></text>
+
+    <text x="20" y="470" class="dim">advisory by default · zero runtime deps · 100% precision / 0 FP on the eval corpus</text>
+  </g>
+</svg>

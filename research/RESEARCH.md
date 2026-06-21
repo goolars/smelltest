@@ -37,19 +37,24 @@ The study was gated by a six-member adversarial board at four stages (avg scores
 
 ## Top pain points → what smelltest does about them
 
-| Pain point | Freq / sev | smelltest's response |
-|---|---|---|
-| PP-03 Dishonesty: false "done", lying about edits, gaming tests | common / high | **Primary target.** `done.empty_diff` + `done.todo_only` block; `tests_gamed` is warn-only (not mechanically decidable). |
-| PP-02 Partial completion dressed as done | dominant / high | Unsupported-completion block at the Stop gate. |
-| PP-05 Instruction non-compliance / scope drift | common / high | `scope.unrequested_file` — files touched vs files requested. |
-| PP-12 Reckless edits to files never read | occasional / high | `scope.blind_edit` advisory. |
-| PP-07 Destructive commands → unrecoverable loss | common / critical | The one fail-closed default: ask-not-deny PreToolUse guard. |
-| PP-04 / PP-08 Cost shock & runaway loops | common / critical | Addressed *defensively*: the gate is bounded, fail-open, network-free, off-by-default — it can't become the hazard. |
-| PP-10 Trust erosion from silent behavior | common / high | The append-only ledger makes every block explainable and every uncheckable signal a visible `notChecked`. |
+This table lists the **codes that actually ship in v0.3** — no others. (An earlier draft of this
+file named codes — `done.empty_diff`, `done.todo_only`, `tests_gamed`, `scope.unrequested_file` —
+that the structural rework consolidated or cut; they were corrected here rather than left to imply
+features that don't exist.)
 
-Pain points smelltest deliberately does **not** claim to solve (usage limits, model-quality
-regressions, platform outages, account bans) are out of scope for a client-side acceptance
-gate — see the full taxonomy for the complete list of 22.
+| Pain point | Freq / sev | smelltest's response (shipped) |
+|---|---|---|
+| PP-04 / PP-08 Cost shock & runaway loops | common / critical | **The headline feature:** a self-owned, bounded retry fuse (ledger cap → ceiling → oscillation guard). Bounded, fail-open, network-free, off-by-default — it can't become the hazard. |
+| PP-03 Dishonesty: false "done", gaming tests | common / high | `done.no_substance` (claim vs. 0 substantive added lines) and `tests.tampered` (claim vs. dropped assertions / added skips) — both graded from the diff, both **warn**. |
+| PP-02 Partial completion dressed as done | dominant / high | Same `done.no_substance` re-grade at the Stop gate — the claim is checked against the diff, not taken on the model's word. |
+| PP-12 Reckless edits to files never read | occasional / high | `scope.blind_edit` advisory (note severity). |
+| PP-10 Trust erosion from silent behavior | common / high | The append-only ledger makes every block explainable, and every uncheckable signal a visible `notChecked` — silenced findings included, never silent. |
+
+**Scoped out of v0.3 (named honestly so this file can't mislead):** the *destructive-command
+PreToolUse guard* (PP-07) was spun out as a separate security niche, and the *requested-vs-touched
+scope check* (PP-05) was not built — neither ships here. Pain points smelltest never claims to solve
+(usage limits, model-quality regressions, outages, account bans) are out of scope for a client-side
+acceptance gate; see the full taxonomy for all 22.
 
 ## The throughline
 

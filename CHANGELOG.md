@@ -20,9 +20,18 @@ reviewdog, parse-diff, gitdiff-parser, eslint-plugin-jest, and the framework doc
   test-selector misses.
 - **Corpus**: 20 → 35 cases incl. real-framework positives and false-positive baits. eval still
   reports **100% precision · 100% recall · 0 false positives**.
+- **Pure Stop-decision policy** (`src/gate.ts`): the allow/block decision is extracted from the
+  hook into a pure `decideStop(ledgerState, verdict, cfg)`, so the consumer-facing path is
+  unit-tested and the loop bound is proven on the real policy (not a re-implementation).
+- **Per-repo false-positive escape hatch**: a project's `.smelltest/config.json` now actually
+  loads (two-layer merge: defaults → plugin → project), and `disabledCodes` silences a finding
+  in your repo — routed to `notChecked` so it stays auditable, never silently dropped.
+- **CI-enforced recall floor** (`eval/run.ts`): an `EXPECTED_FN_FLOOR` snapshot fails CI if the
+  false-negative floor rises (a real signal regressing), the same way a false positive does.
 - **Distribution**: `.claude-plugin/marketplace.json`; README install reframed (marketplace
-  primary, source as the contributor path).
-- **Tests**: 9 → 18 (parser edge-case, transcript-schema, and config-validation suites).
+  primary, source as the contributor path); pain-first README + faithful terminal demo SVG.
+- **Tests**: 9 → 29 (parser edge-case, transcript-schema, config-validation, `decideStop`
+  policy, and a live-hook child-process e2e that drives the shipped Stop gate end-to-end).
 
 **Deferred to a later release (recorded honestly, not hidden)**
 - Stub-bodied-declaration rule (retire the `def …: pass` FN floor) — highest FP risk; needs the
