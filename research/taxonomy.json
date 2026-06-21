@@ -318,9 +318,7 @@
         "all Claude Code sessions silently deleted during a background update — no migration",
         "Cowork silently corrupts files in OneDrive folders with Files-On-Demand"
       ],
-      "sources": [
-        "github-primary: anthropics/claude-code #61952, #58608, #45076, #62140, #69329"
-      ]
+      "sources": ["github-primary: anthropics/claude-code #61952, #58608, #45076, #62140, #69329"]
     },
     {
       "id": "PP-17",
@@ -402,9 +400,7 @@
         "a large estimated share of closures appear bot-driven rather than human-reviewed (single-analyst estimate)",
         "a 12+ issue cluster got zero visible staff responses, then silence"
       ],
-      "sources": [
-        "single-source: GitHub gist (azkore case study) — figures are directional, not verified"
-      ]
+      "sources": ["single-source: GitHub gist (azkore case study) — figures are directional, not verified"]
     }
   ]
 }

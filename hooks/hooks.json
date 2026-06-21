@@ -5,7 +5,11 @@
       {
         "matcher": "Edit|Write|NotebookEdit",
         "hooks": [
-          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/note-blind-edit.ts\"", "timeout": 10 }
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/note-blind-edit.ts\"",
+            "timeout": 10
+          }
         ]
       }
     ],

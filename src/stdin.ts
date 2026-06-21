@@ -14,19 +14,25 @@ export interface HookInput {
 
 export function readHookInput(): Promise<HookInput> {
   return new Promise((resolve) => {
-    let data = '';
+    let data = "";
     let settled = false;
     const done = () => {
       if (settled) return;
       settled = true;
-      try { resolve(data ? JSON.parse(data) : {}); } catch { resolve({}); }
+      try {
+        resolve(data ? JSON.parse(data) : {});
+      } catch {
+        resolve({});
+      }
     };
     if (process.stdin.isTTY) return resolve({});
-    process.stdin.setEncoding('utf8');
-    process.stdin.on('data', (c) => (data += c));
-    process.stdin.on('end', done);
-    process.stdin.on('error', () => resolve({}));
+    process.stdin.setEncoding("utf8");
+    process.stdin.on("data", (c) => {
+      data += c;
+    });
+    process.stdin.on("end", done);
+    process.stdin.on("error", () => resolve({}));
     const t = setTimeout(done, 2000);
-    if (typeof t.unref === 'function') t.unref();
+    if (typeof t.unref === "function") t.unref();
   });
 }

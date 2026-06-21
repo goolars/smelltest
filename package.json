@@ -3,8 +3,12 @@
   "version": "0.3.0",
   "description": "A model-free, zero-dependency Claude Code Stop gate that bounds its own retries (the fuse) and re-grades 'done / tests-pass' against the STRUCTURE of the git diff. Advisory by default.",
   "type": "module",
-  "bin": { "smelltest": "src/cli.ts" },
-  "engines": { "node": ">=22.6" },
+  "bin": {
+    "smelltest": "src/cli.ts"
+  },
+  "engines": {
+    "node": ">=22.6"
+  },
   "scripts": {
     "test": "node --test",
     "typecheck": "tsc --noEmit",
@@ -16,10 +20,20 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@types/node": "^20.19.43",
     "esbuild": "^0.24.0",
     "typescript": "^5.6.3"
   },
-  "keywords": ["claude-code", "hooks", "agents", "verification", "guardrails", "completion-check", "loop-safety", "self-critique"],
+  "keywords": [
+    "claude-code",
+    "hooks",
+    "agents",
+    "verification",
+    "guardrails",
+    "completion-check",
+    "loop-safety",
+    "self-critique"
+  ],
   "license": "MIT",
   "author": "Lars Godoy"
 }
