@@ -21,7 +21,7 @@
 
   <g>
     <text x="20" y="74"><tspan class="prompt">$ </tspan><tspan class="t">smelltest arm</tspan></text>
-    <text x="20" y="99" class="dim">smelltest enforcement ARMED.  Bounded: max 2 revisions, fail-open.</text>
+    <text x="20" y="99" class="dim">smelltest enforcement ARMED. Bounded: max 2 revisions, session-independent ceiling, fail-open.</text>
 
     <text x="20" y="139" class="cmt"># the agent ends its turn:  "Implemented the feature. Tests pass."</text>
     <text x="20" y="161" class="cmt"># but the only change in the diff is a comment:</text>
@@ -38,6 +38,6 @@
     <text x="20" y="394" class="cmt"># if it instead loops on the same empty claim, the self-owned fuse trips:</text>
     <text x="20" y="416"><tspan class="yel">smelltest: revision cap (2) reached — allowing stop.</tspan><tspan class="dim">   ← cannot run away</tspan></text>
 
-    <text x="20" y="470" class="dim">advisory by default · zero runtime deps · 100% precision / 0 FP on the eval corpus</text>
+    <text x="20" y="470" class="dim">advisory by default · zero runtime deps · 0 FP on a 35-case internal corpus</text>
   </g>
 </svg>

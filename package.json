@@ -15,6 +15,7 @@
     "lint": "biome check .",
     "format": "biome format --write .",
     "eval": "node eval/run.ts",
+    "demo": "node eval/demo.mjs",
     "build": "node scripts/build.mjs",
     "smelltest": "node src/cli.ts"
   },

@@ -41,7 +41,9 @@ function main(): void {
     return i >= 0 ? argv[i + 1] : null;
   };
   const root = get("--root") || projectRoot();
-  const cfg = loadConfig(get("--plugin-root") || process.env.CLAUDE_PLUGIN_ROOT || undefined);
+  // Pass `root` as the project layer so a CLI re-grade honors this repo's .smelltest/config.json
+  // (disabledCodes, bounds) — same as the hooks do. Without it the CLI silently ignored it.
+  const cfg = loadConfig(get("--plugin-root") || process.env.CLAUDE_PLUGIN_ROOT || undefined, root);
   const armedFile = path.join(root, cfg.armedFlagPath);
 
   const sub = argv.find((a) => a === "arm" || a === "disarm" || a === "status");

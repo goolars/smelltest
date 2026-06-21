@@ -46,7 +46,7 @@ function cleanup(repo: string, work: string) {
   fs.rmSync(work, { recursive: true, force: true });
 }
 
-test("e2e: armed gate blocks a false-done, then allows after the bound", () => {
+test("e2e: armed gate blocks a false-done, then the oscillation guard releases it", () => {
   const { repo, work, input } = setup();
   execFileSync(process.execPath, [CLI, "--root", repo, "arm"]);
 
@@ -54,16 +54,39 @@ test("e2e: armed gate blocks a false-done, then allows after the bound", () => {
   assert.match(r1.stdout, /"decision":"block"/, "call 1 emits decision:block");
   assert.match(r1.stdout, /done\.no_substance/, "block reason names done.no_substance");
 
+  // Identical claim again -> same finding code -> the oscillation guard (the stricter brake,
+  // ahead of the per-session cap) releases the stop rather than thrashing on the same finding.
   const r2 = runHook(repo, input);
-  assert.doesNotMatch(
-    r2.stdout,
-    /"decision":"block"/,
-    "call 2 allows (oscillation/cap) — the loop is bounded",
-  );
+  assert.doesNotMatch(r2.stdout, /"decision":"block"/, "call 2 allows — the loop is bounded");
 
   const ledger = fs.readFileSync(path.join(repo, ".smelltest", "ledger.jsonl"), "utf8");
   assert.match(ledger, /"event":"block"/, "ledger records the block");
-  assert.match(ledger, /"event":"allow_(oscillation|cap)"/, "ledger records the bounded allow");
+  assert.match(ledger, /"event":"allow_oscillation"/, "ledger records the oscillation release");
+  cleanup(repo, work);
+});
+
+test("e2e: drives the maxRevisions cap end-to-end (oscillation disabled via project config)", () => {
+  const { repo, work, input } = setup();
+  execFileSync(process.execPath, [CLI, "--root", repo, "arm"]);
+  // Turn off the oscillation guard for this repo so the IDENTICAL claim can't short-circuit on
+  // the same finding — now only the per-session cap can stop the loop. This is the headline
+  // "blocks at most maxRevisions (2) times, then allows" fuse, proven through the SHIPPED hook
+  // (and it exercises project-level .smelltest/config.json loading at the same time).
+  fs.writeFileSync(
+    path.join(repo, ".smelltest", "config.json"),
+    JSON.stringify({ bounds: { oscillationGuard: false } }),
+  );
+
+  assert.match(runHook(repo, input).stdout, /"decision":"block"/, "block 1 of 2 (used 0 -> 1)");
+  assert.match(runHook(repo, input).stdout, /"decision":"block"/, "block 2 of 2 (used 1 -> 2)");
+
+  const r3 = runHook(repo, input);
+  assert.doesNotMatch(r3.stdout, /"decision":"block"/, "call 3 hits the cap and ALLOWS");
+  assert.match(r3.stdout, /revision cap \(2\) reached/, "call 3 emits the cap message");
+
+  const ledger = fs.readFileSync(path.join(repo, ".smelltest", "ledger.jsonl"), "utf8");
+  assert.equal((ledger.match(/"event":"block"/g) || []).length, 2, "exactly 2 blocks — never more");
+  assert.match(ledger, /"event":"allow_cap"/, "the cap, not oscillation, released the loop");
   cleanup(repo, work);
 });
 

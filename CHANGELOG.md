@@ -30,8 +30,23 @@ reviewdog, parse-diff, gitdiff-parser, eslint-plugin-jest, and the framework doc
   false-negative floor rises (a real signal regressing), the same way a false positive does.
 - **Distribution**: `.claude-plugin/marketplace.json`; README install reframed (marketplace
   primary, source as the contributor path); pain-first README + faithful terminal demo SVG.
-- **Tests**: 9 → 29 (parser edge-case, transcript-schema, config-validation, `decideStop`
-  policy, and a live-hook child-process e2e that drives the shipped Stop gate end-to-end).
+- **Tests**: 9 → 30 (parser edge-case, transcript-schema, config-validation, `decideStop`
+  policy, and live-hook child-process e2e tests that drive the shipped Stop gate end-to-end —
+  including the `maxRevisions` cap proven through the real hook).
+
+**Closure-board fixes (a re-assessment board turned smelltest's own thesis on itself)**
+- **Honest recall.** `eval/run.ts` previously reported recall only over the catchable set, pinning
+  it at 100% by construction. It now counts the documented evasions as the misses they are
+  (recall ≈ 88%), so the number can actually drop — no unfalsifiable headline.
+- **Install can't silently no-op.** `install.mjs --dist` (and auto-detect on Node < 22.6) wires the
+  built `dist/hooks/*.mjs` and *refuses* to install `.ts` hooks a Node can't run — a silently-inert
+  guardrail was the exact "looks done, isn't" failure the project condemns.
+- **`npm run demo`.** One command spins up a throwaway repo + false-completion transcript and drives
+  the real hook `block → block → allow (cap)`, so the headline fuse is observable, not just asserted.
+- **CLI honors per-repo config.** `smelltest --latest/--stdin` now loads `.smelltest/config.json`
+  (it only did so via the hooks before).
+- Corrected README over-claims the board flagged: dropped a "single most-reported" superlative the
+  taxonomy doesn't support, fixed a wrong CI path, removed the broken `OWNER`-placeholder CI badge.
 
 **Deferred to a later release (recorded honestly, not hidden)**
 - Stub-bodied-declaration rule (retire the `def …: pass` FN floor) — highest FP risk; needs the

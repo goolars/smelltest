@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 // smelltest installer — wire it into a real project without the plugin marketplace.
 //
-//   node install.mjs --project <path-to-your-project>
+//   node install.mjs --project <path-to-your-project> [--dist]
 //
 // Copies commands/agents/skills into <project>/.claude/ and merges the Stop/PostToolUse hooks
 // into <project>/.claude/settings.json, resolving ${CLAUDE_PLUGIN_ROOT} to THIS repo so the
-// hooks run from here (Node >= 22.6 runs the .ts directly; or `npm run build` first and point
-// the hooks at dist/). Backs up any existing settings.json.
+// hooks run from here. By default the hooks point at the `.ts` sources (Node >= 22.6 strips the
+// types and runs them directly). On Node < 22.6 — or with --dist — the installer points the hooks
+// at the built `dist/hooks/*.mjs` instead, and REFUSES to wire `.ts` hooks a Node it can't run
+// (a silently-inert guardrail is worse than a loud error). Backs up any existing settings.json.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -30,6 +32,21 @@ if (!fs.existsSync(root)) {
   process.exit(1);
 }
 
+// Decide whether to wire .ts sources or the built dist/. Node strips TS types only on >= 22.6.
+const [maj, min] = process.versions.node.split(".").map(Number);
+const canRunTs = maj > 22 || (maj === 22 && min >= 6);
+const useDist = process.argv.includes("--dist") || !canRunTs;
+const distHook = path.join(here, "dist", "hooks", "stop-gate.mjs");
+if (useDist && !fs.existsSync(distHook)) {
+  const why = canRunTs
+    ? "--dist was requested"
+    : `Node ${process.versions.node} cannot run .ts hooks (need >= 22.6)`;
+  console.error(
+    `${why}, but no built dist/ was found at ${distHook}.\nBuild it first, then re-run this installer:\n  npm install && npm run build`,
+  );
+  process.exit(1);
+}
+
 const claude = path.join(root, ".claude");
 for (const sub of ["commands", "agents", "skills"]) {
   const src = path.join(here, sub);
@@ -48,11 +65,12 @@ function rewrite(dir) {
 for (const sub of ["commands", "agents", "skills"]) rewrite(path.join(claude, sub));
 console.log(`✓ commands / agents / skills -> ${claude}`);
 
-const pluginHooks = JSON.parse(
-  fs
-    .readFileSync(path.join(here, "hooks", "hooks.json"), "utf8")
-    .replaceAll("${CLAUDE_PLUGIN_ROOT}", hereSlash),
-).hooks;
+let hooksRaw = fs
+  .readFileSync(path.join(here, "hooks", "hooks.json"), "utf8")
+  .replaceAll("${CLAUDE_PLUGIN_ROOT}", hereSlash);
+// dist mode: rewrite the hook commands from the .ts sources to the built .mjs bundle.
+if (useDist) hooksRaw = hooksRaw.replace(/\/hooks\/([\w-]+)\.ts/g, "/dist/hooks/$1.mjs");
+const pluginHooks = JSON.parse(hooksRaw).hooks;
 const settingsPath = path.join(claude, "settings.json");
 let settings = {};
 if (fs.existsSync(settingsPath)) {
@@ -69,8 +87,8 @@ fs.writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
 console.log(`✓ hooks merged -> ${settingsPath}`);
 
 console.log(`
-Installed in ADVISORY mode — nothing blocks until you arm it. Requires Node >= 22.6 (or run
-\`npm run build\` and point the hooks at dist/).
+Installed in ADVISORY mode (${useDist ? "dist/.mjs hooks" : ".ts hooks, Node >= 22.6"}) — nothing
+blocks until you arm it.
   /smell            re-grade your last turn (advisory)
   /smell-loop on    arm enforcement (bounded: max 2 revisions, fail-open)
   /smell-loop off   disarm

@@ -1,17 +1,19 @@
 # smelltest
 
-[![CI](https://github.com/OWNER/smelltest/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/smelltest/actions/workflows/ci.yml)
+<!-- Re-add the CI status badge after the first push, once Actions has run green on the real slug:
+     [![CI](https://github.com/<owner>/smelltest/actions/workflows/ci.yml/badge.svg)](...) -->
 ![license](https://img.shields.io/badge/license-MIT-blue.svg)
 ![types](https://img.shields.io/badge/TypeScript-strict-3178c6.svg)
 ![runtime deps](https://img.shields.io/badge/runtime%20deps-0-success.svg)
 ![node](https://img.shields.io/badge/node-%E2%89%A522.6-339933.svg)
-![eval](https://img.shields.io/badge/eval-100%25%20precision%20%C2%B7%200%20FP-success.svg)
+![tests](https://img.shields.io/badge/tests-30%20passing-success.svg)
+![eval](https://img.shields.io/badge/eval-0%20FP%20on%2035--case%20corpus-success.svg)
 
 Two things go wrong at the end of an agent's turn, and both cost you real money:
 
 1. **It says it's done when it isn't.** "Implemented the feature. Tests pass." — but the diff
-   changed a comment, or weakened an assertion, or did nothing at all. False-completion is the
-   single most-reported Claude Code complaint in the corpus this was built from.
+   changed a comment, or weakened an assertion, or did nothing at all. Confidently-wrong-about-its-
+   own-work is the dominant *trust*-breaking theme across the corpus this was built from.
 2. **It can't stop.** An uncapped revise-and-retry loop quietly burns tokens until you notice the bill.
 
 **smelltest** is a model-free, zero-dependency Claude Code **Stop hook** that addresses both. It
@@ -20,6 +22,9 @@ the structure of the actual `git diff`** — no LLM, no network, on every Stop. 
 bounded enforcement is one command away.
 
 ![smelltest blocking a false completion, then allowing after the bound](docs/demo.svg)
+
+<sub>Composite of real `smelltest` output (every line is a string the gate actually emits) — watch
+it live against a throwaway repo with **`npm run demo`**.</sub>
 
 > Built research-first (a 775-observation complaint taxonomy, board-reviewed) and rebuilt under
 > adversarial review — the detection was upgraded from a lexeme scan to a structural diff check.
@@ -52,10 +57,12 @@ tops out at `warn`; arming turns a warn into a *bounded* block.
 ### Measured (internal regression floor, not an external benchmark)
 
 `node eval/run.ts` on a 35-case adversarial corpus (incl. real per-framework test-tamper idioms and
-false-positive baits): **precision 100% · recall 100% · 0 false positives**, with a published
-**false-negative floor of 2** documented evasions (a neutral completion with no claim verb; a
-function signature whose body is a stub). These measure *the author's imagination of attacks*, not
-real-world evasion — they are a regression floor, not a catch-rate proof. The honest ceiling:
+false-positive baits): **precision 100% · 0 false positives**, and **recall 88%** — the two known
+evasions (a neutral completion with no claim verb; a function signature whose body is a stub) are
+**counted as the misses they are**, not bucketed away to keep the number at 100%. That 2-evasion
+**false-negative floor is CI-enforced**: if it rises, the build fails like a false positive does.
+These measure *the author's imagination of attacks*, not real-world evasion — they are a regression
+floor, not a catch-rate proof. The honest ceiling:
 model-free structure confirms the diff *changed in a way consistent with the claim*; it cannot
 confirm the code *does* what was claimed. A determined agent can pad inert-but-real lines past the
 line classifier. That is why `done.no_substance` is **warn, never a hard block**, until a
@@ -66,22 +73,28 @@ false-positive rate is published for a stricter mode.
 **As a Claude Code plugin (primary):**
 
 ```
-/plugin marketplace add OWNER/smelltest
+/plugin marketplace add <owner>/smelltest      # <owner> = the GitHub slug once published
 /plugin install smelltest@smelltest-marketplace
 ```
 
 Then `/smell` (advisory — changes nothing), `/smell-loop on` (arm bounded enforcement),
-`/smell-loop off`. Requires Node ≥ 22.6 (the hooks run the `.ts` directly); `npm run build`
-produces a Node-18 `dist/` bundle.
+`/smell-loop off`.
 
 **From source (contributors / zero-marketplace):**
 
 ```bash
 git clone <repo> && cd smelltest
-node --test            # 29 tests across 4 files incl. the executing halt-proof + a live-hook e2e
+npm install            # dev toolchain (only needed for build/lint/types — test+eval are zero-dep)
+node --test            # 30 tests across 4 files incl. the executing halt-proof + a live-hook e2e
 node eval/run.ts       # precision / recall / FN floor over the adversarial corpus
+npm run demo           # watch the real fuse: block -> block -> allow (cap reached)
 node install.mjs --project /your/app   # wire the hooks into a project's .claude/
 ```
+
+Requires **Node ≥ 22.6** (the hooks run the `.ts` directly via type-stripping). On older Node, run
+`npm run build` for a Node-18 `dist/` bundle and install with `node install.mjs --project /your/app
+--dist` — the installer refuses to wire `.ts` hooks a Node it can't execute (a silently-inert
+guardrail is worse than a loud error).
 
 ## Safety model
 
@@ -94,9 +107,10 @@ node install.mjs --project /your/app   # wire the hooks into a project's .claude
 
 ## Tuning & the false-positive escape hatch
 
-Drop a `.smelltest/config.json` in your repo to override any default for that project (deep-merged
-over the shipped defaults). The escape hatch for a finding you consider a false positive in your
-codebase is `disabledCodes`:
+Drop a `.smelltest/config.json` in your repo to override any default for that project — honored by
+both the Stop hooks and the CLI. Object keys (e.g. `bounds`) are deep-merged over the shipped
+defaults; array keys (e.g. `disabledCodes`) are replaced wholesale. The escape hatch for a finding
+you consider a false positive in your codebase is `disabledCodes`:
 
 ```jsonc
 {
@@ -105,9 +119,10 @@ codebase is `disabledCodes`:
 }
 ```
 
-A disabled code is **silenced, never silent**: it moves to the `notChecked` audit list so the ledger
-still shows the human turned it off. And because the loop is bounded, a false positive can never trap
-you — armed, it costs at most `maxRevisions` nudges, then allows the stop regardless.
+A disabled code is **silenced, never silent**: it moves to the verdict's `notChecked` audit list (and
+is persisted to the ledger on the resulting pass) so it stays visible that a human turned it off.
+And because the loop is bounded, a false positive can never trap you — armed, it costs at most
+`maxRevisions` nudges, then allows the stop regardless.
 
 ## What changed in the rework (v0.1 → v0.2 → v0.3)
 
@@ -161,11 +176,11 @@ hook normalizes paths for both.
 ## Layout
 
 ```
-src/           types · config · ledger(fuse) · claims · substance · reconcile · kernel · gate · evidence · stdin · cli
-hooks/         stop-gate.ts · note-blind-edit.ts · hooks.json
-eval/          run.ts + corpus/cases.json (adversarial)
-test/          smell · gate · evidence · e2e-stop-gate   (29 tests, node --test)
-.github/ci.yml  tsconfig.json  biome.json  SMOKE-TEST.md  docs/  research/
+src/                    types · config · ledger(fuse) · claims · substance · reconcile · kernel · gate · evidence · stdin · cli
+hooks/                  stop-gate.ts · note-blind-edit.ts · hooks.json
+eval/                   run.ts · demo.mjs · corpus/cases.json (adversarial)
+test/                   smell · gate · evidence · e2e-stop-gate   (30 tests, node --test)
+.github/workflows/ci.yml  tsconfig.json  biome.json  SMOKE-TEST.md  docs/  research/
 ```
 
 ## Credits & license

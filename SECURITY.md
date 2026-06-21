@@ -2,9 +2,10 @@
 
 ## Reporting a vulnerability
 
-Please report security issues **privately** via GitHub's
-[Security Advisories](https://github.com/OWNER/smelltest/security/advisories/new) — not a public
-issue. I'll acknowledge within a few days. There is no bounty; this is a solo open-source project.
+Please report security issues **privately** via GitHub's **Security → Advisories → Report a
+vulnerability** on the repository (i.e. `https://github.com/<owner>/smelltest/security/advisories/new`
+once published) — not a public issue. I'll acknowledge within a few days. There is no bounty; this
+is a solo open-source project.
 
 ## Threat model (what smelltest is and isn't)
 

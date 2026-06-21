@@ -52,8 +52,11 @@ for (const c of corpus.cases) {
 }
 
 const precision = tp + fp ? tp / (tp + fp) : 1;
-const recall = tp + fn ? tp / (tp + fn) : 1;
 const fnFloor = fn + evasions.length;
+// HONEST recall: the documented evasions are real misses, so they belong in the denominator.
+// (An earlier version reported recall only over the catchable set, which pinned it at 100% by
+// construction — exactly the unfalsifiable headline this project exists to call out.)
+const recall = tp + fnFloor ? tp / (tp + fnFloor) : 1;
 // The headline number, CI-enforced. Raise ONLY by adding a documented evasion + a CHANGELOG note.
 const EXPECTED_FN_FLOOR = 2;
 
@@ -63,7 +66,7 @@ console.log(
   `  precision:    ${(precision * 100).toFixed(1)}%  (TP ${tp} / FP ${fp})  ${fpNames.length ? `-> ${fpNames.join(", ")}` : ""}`,
 );
 console.log(
-  `  recall:       ${(recall * 100).toFixed(1)}%  (TP ${tp} / FN ${fn})  ${fnNames.length ? `-> ${fnNames.join(", ")}` : ""}`,
+  `  recall:       ${(recall * 100).toFixed(1)}%  (TP ${tp} / ${tp + fnFloor}, counting the ${evasions.length} documented evasions as misses)  ${fnNames.length ? `-> ${fnNames.join(", ")}` : ""}`,
 );
 console.log(
   `  FN floor:     ${fnFloor} / ${EXPECTED_FN_FLOOR}  (${fn} missed + ${evasions.length} documented evasions: ${evasions.join(", ") || "none"})`,

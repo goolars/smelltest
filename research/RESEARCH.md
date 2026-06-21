@@ -6,6 +6,12 @@ artifacts are in this folder: [`taxonomy.json`](taxonomy.json), [`plan.json`](pl
 [`deep-findings.json`](deep-findings.json), [`build-spec.json`](build-spec.json), and the
 full [`board-trace.json`](board-trace.json).
 
+> **These JSON files are the historical build record**, captured before the structural rework.
+> They still name early-draft finding codes (`done.empty_diff`, `done.todo_only`, `tests_gamed`,
+> `scope.unrequested_file`) that were since consolidated or cut. The table below — and the shipped
+> code — is the authority on what actually exists; the artifacts are kept unedited for provenance,
+> not as a spec.
+
 ## Method (and its honest limits)
 
 15 research scouts swept Reddit, the `anthropics/claude-code` issue tracker, Hacker News,
