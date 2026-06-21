@@ -18,8 +18,9 @@ reviewdog, parse-diff, gitdiff-parser, eslint-plugin-jest, and the framework doc
 - **Robustness**: config regex validation at load (a malformed override reverts to default
   instead of crashing the gate); explicit `notChecked` gaps for binary/merge-only changes and
   test-selector misses.
-- **Corpus**: 20 → 35 cases incl. real-framework positives and false-positive baits. eval still
-  reports **100% precision · 100% recall · 0 false positives**.
+- **Corpus**: 20 → 35 cases incl. real-framework positives and false-positive baits. eval reports
+  **100% precision · 88% recall (2-evasion FN floor) · 0 false positives** (see the honest-recall
+  fix below — recall counts the documented evasions as misses).
 - **Pure Stop-decision policy** (`src/gate.ts`): the allow/block decision is extracted from the
   hook into a pure `decideStop(ledgerState, verdict, cfg)`, so the consumer-facing path is
   unit-tested and the loop bound is proven on the real policy (not a re-implementation).
