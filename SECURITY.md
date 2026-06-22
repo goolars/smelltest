@@ -4,7 +4,7 @@
 
 Please report security issues **privately** via GitHub's **Security → Advisories → Report a
 vulnerability** on the repository (i.e. `https://github.com/goolars/smelltest/security/advisories/new`
-once published) — not a public issue. I'll acknowledge within a few days. There is no bounty; this
+once published) — not a public issue. I'll acknowledge within a few days. There is no bounty. This
 is a solo open-source project.
 
 ## Threat model (what smelltest is and isn't)
@@ -19,7 +19,7 @@ of the project's whole thesis:
 - **It is a guardrail, not a sandbox.** When armed, it can *bound* an agent's retries and flag
   unsupported completion claims — but an agent (or user) with write access to the repo can disarm
   it (delete `.smelltest/armed`) or silence findings via `.smelltest/config.json`. This is
-  disclosed in the README; do not deploy smelltest as a security control against a hostile agent.
+  disclosed in the README. Do not deploy smelltest as a security control against a hostile agent.
 - **Fail-open is intentional.** Any internal error degrades to *allow* so a bug can never deadlock a
   turn. This is a deliberate availability-over-enforcement trade-off, not an oversight.
 - **The ledger is integrity-relevant.** `.smelltest/ledger.jsonl` is the append-only record the

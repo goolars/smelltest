@@ -16,7 +16,7 @@ Easiest — let the extractor build the evidence from the transcript + git:
 node "${CLAUDE_PLUGIN_ROOT}/src/cli.ts" --latest
 ```
 
-Or pipe a hand-built evidence object (the diff is parsed into hunks; the kernel counts
+Or pipe a hand-built evidence object (the diff is parsed into hunks — the kernel counts
 substantive added lines itself):
 
 ```json
@@ -33,6 +33,6 @@ substantive added lines itself):
   (comment/stub/import don't count). Make the real change, then re-run.
 - **WARN `tests.tampered`** → the diff weakened the test suite under a "tests pass" claim.
   Never edit tests to pass — fix the code.
-- **note `scope.blind_edit`** → say it out loud; you edited a file you never read.
+- **note `scope.blind_edit`** → say it out loud — you edited a file you never read.
 - **No flags** → say "structural checks did not flag this", never "verified". A self-graded
   claim never earns a check.

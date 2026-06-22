@@ -4,7 +4,7 @@
 
 A web research fan-out + a 4-member board (staff eng / DevRel / OSS maintainer / skeptic)
 converged **unanimously** on this: the most-screamed-for, model-free-buildable, uncontested gap is
-an **in-loop spend cap**. Native `--max-budget-usd` bounds a *single* `claude -p`; the pain that
+an **in-loop spend cap**. Native `--max-budget-usd` bounds a *single* `claude -p`. The pain that
 burned users `$313 in 8.5h` and `$6k overnight` is the *multi-invocation* daemon loop — and no Stop
 hook receives a cost field. smelltest now closes it.
 
@@ -13,7 +13,7 @@ hook receives a cost field. smelltest now closes it.
   turns by `(message.id + requestId)`** (verified: ~58% of rows are duplicates — naive summing
   ~triples the figure), multiplies the token classes by a **pinned, dated price snapshot**
   (`pricing/litellm-snapshot.json`), and sums. Flat `usage.*` primary, `usage.iterations[]`
-  fallback; **1h cache writes price at input × 2.** Pure, offline, no clock.
+  fallback — **1h cache writes price at input × 2.** Pure, offline, no clock.
 - **A new `allow_budget` brake** (`src/gate.ts`): when armed and cumulative session spend crosses
   `budget.ceilingUsd`, the Stop gate **allows the stop with a loud receipt** — checked *first*, and
   an *allow* (it only shortens a session), so it rides the existing executing halt-proof and **can
@@ -25,9 +25,9 @@ hook receives a cost field. smelltest now closes it.
   **never** a false "$0 / within budget." Verified on a real transcript: every current model priced
   via longest-prefix family match, `<synthetic>` and unknown → notChecked.
 - **Honest by construction.** Every figure is labelled an **estimate** (client-side token × price,
-  drifts from the real bill; a token-equivalent budget on Pro/Max; bounds the *next* turn). Stated
+  drifts from the real bill — a token-equivalent budget on Pro/Max — bounds the *next* turn). Stated
   in the receipt and the README.
-- **Zero-config:** a sane default ceiling ships in `DEFAULTS`; per-repo override via
+- **Zero-config:** a sane default ceiling ships in `DEFAULTS`. Per-repo override via
   `.smelltest/config.json → budget.ceilingUsd`. Install is still the one command `npx smelltest init`.
 - **Tests (+9, now 39):** exact-cost fixture (dedup + 1h-cache×2 + fail-soft), the `allow_budget`
   branch, and an e2e driving the real hook to an `allow_budget` receipt. Sources attributed
@@ -36,18 +36,18 @@ hook receives a cost field. smelltest now closes it.
 **Review-board fixes (an adversarial board ran on the v0.4 build and found real defects)**
 - **Corrected the price snapshot** — it had shipped legacy Claude-3-era figures: Opus 4.x was **3×
   too high** ($15/$75 → the correct **$5/$25** per 1M) and Haiku 4.5 too low ($0.80/$4 → **$1/$5**),
-  while the file claimed they were current. Verified against Anthropic's published list; added Fable
+  while the file claimed they were current. Verified against Anthropic's published list. Added Fable
   5 / Mythos 5 ($10/$50). Re-derived the exact fixture (0.117255 → 0.047255).
 - **Pinned the prices independently of the fixture.** The exact-cost fixture is computed *from* the
-  snapshot, so it could never catch a wrong price; a new test asserts each family's per-1M price as a
+  snapshot, so it could never catch a wrong price. A new test asserts each family's per-1M price as a
   hard literal, so a future drift fails CI.
 - **Fixed a real runaway: a typo'd `bounds` value looped forever.** `validateConfig` clamped `budget`
   but not `bounds` — a non-numeric `maxRevisions` made `used >= NaN` always false, so the gate would
   block every turn (the exact unbounded loop the fuse exists to prevent). Now coerced like `budget`.
 - **Restored fail-open on an unwritable ledger.** A persistent ledger-write failure left `used` at 0
-  → block forever; `ledger.append` now reports failure and the block branch fails *open*.
+  → block forever. `ledger.append` now reports failure and the block branch fails *open*.
 - **De-overclaimed the headline.** The README sold the budget brake with active-halt verbs
-  ("hard-stops a runaway agent"); the mechanism is an *allow* at the turn boundary, not a mid-flight
+  ("hard-stops a runaway agent"). The mechanism is an *allow* at the turn boundary, not a mid-flight
   interrupt. Reworded to say exactly that, and split the in-loop single-session bound from the
   multi-invocation `spend --ci` case (the in-loop hook can't see the cross-invocation `$313/$6k`
   daemon loop).
@@ -55,13 +55,13 @@ hook receives a cost field. smelltest now closes it.
 **Ship-gate fixes (a final board ran the gate itself and blocked the push)**
 - **The gate was actually red.** `biome check .` failed on `src/cli.ts` (`noVoidTypeReturn`) — and a
   prior commit had *claimed* "gate green" without re-running it (a buggy `| tail -1` check masked the
-  error). Fixed the lint; now gated on the real exit code, not a piped tail.
+  error). Fixed the lint. Now gated on the real exit code, not a piped tail.
 - **Killed the `hard-stops your agent` overclaim where it actually shipped** — it was still in
-  `package.json` / `plugin.json` / `marketplace.json` (the npm + plugin install surfaces); the README
+  `package.json` / `plugin.json` / `marketplace.json` (the npm + plugin install surfaces). The README
   fix hadn't reached them. All three now match the honest README wording.
 - **Cost engine undercount fixed.** The `iterations[]` fallback gated on the *total* flat tokens, so a
   stray 1h-write marker on a parent row stopped it from firing — a live row counted 990,975 cache-read
-  tokens as 355. Now gates on the *substantive* classes and keeps the parent 1h marker; two tests pin
+  tokens as 355. Now gates on the *substantive* classes and keeps the parent 1h marker. Two tests pin
   the split-row case and prove no double-count. A false *low* is forbidden by the project's own rule.
 - Tests 39 → 43. CI badge added (repo is now live at `goolars/smelltest`).
 
@@ -69,19 +69,19 @@ hook receives a cost field. smelltest now closes it.
 
 Driven by a deep source read of high-star comparables (tdd-guard, pre-commit, lefthook,
 reviewdog, parse-diff, gitdiff-parser, eslint-plugin-jest, and the framework docs) — see
-[CREDITS.md](CREDITS.md). Every borrow is idea-only; smelltest stays MIT with zero runtime deps.
+[CREDITS.md](CREDITS.md). Every borrow is idea-only — smelltest stays MIT with zero runtime deps.
 
 **Added / fixed**
-- **Diff-parser rewrite** (`src/evidence.ts`): two-mode state machine; file path from the
+- **Diff-parser rewrite** (`src/evidence.ts`): two-mode state machine, file path from the
   authoritative `+++` / `rename to` line — fixes mis-attribution on spaced and literal-`b/`
-  paths; C-quoted unicode path decoding; rename / new / deleted (`/dev/null`) / binary /
-  mode-only / combined (`--cc`) handling; NUL-byte sniff on untracked binaries.
+  paths, C-quoted unicode path decoding, rename / new / deleted (`/dev/null`) / binary /
+  mode-only / combined (`--cc`) handling, NUL-byte sniff on untracked binaries.
 - **Test-tamper hardening** (`src/config.ts`, `src/substance.ts`): per-framework skip/disable
   idioms (jest/vitest/mocha, pytest/unittest, Go + testify, Rust, JUnit 5, RSpec) with anchored
-  regexes; whole-test-file deletion and test-renamed-out-of-path as first-class signals;
+  regexes, whole-test-file deletion and test-renamed-out-of-path as first-class signals,
   narrowed the `should` assertion marker (was a false-positive source).
 - **Robustness**: config regex validation at load (a malformed override reverts to default
-  instead of crashing the gate); explicit `notChecked` gaps for binary/merge-only changes and
+  instead of crashing the gate), explicit `notChecked` gaps for binary/merge-only changes and
   test-selector misses.
 - **Corpus**: 20 → 35 cases incl. real-framework positives and false-positive baits. eval reports
   **100% precision · 88% recall (2-evasion FN floor) · 0 false positives** (see the honest-recall
@@ -94,8 +94,8 @@ reviewdog, parse-diff, gitdiff-parser, eslint-plugin-jest, and the framework doc
   in your repo — routed to `notChecked` so it stays auditable, never silently dropped.
 - **CI-enforced recall floor** (`eval/run.ts`): an `EXPECTED_FN_FLOOR` snapshot fails CI if the
   false-negative floor rises (a real signal regressing), the same way a false positive does.
-- **Distribution**: `.claude-plugin/marketplace.json`; README install reframed (marketplace
-  primary, source as the contributor path); pain-first README + faithful terminal demo SVG.
+- **Distribution**: `.claude-plugin/marketplace.json`, README install reframed (marketplace
+  primary, source as the contributor path), pain-first README + faithful terminal demo SVG.
 - **Tests**: 9 → 30 (parser edge-case, transcript-schema, config-validation, `decideStop`
   policy, and live-hook child-process e2e tests that drive the shipped Stop gate end-to-end —
   including the `maxRevisions` cap proven through the real hook).
@@ -130,14 +130,14 @@ reviewdog, parse-diff, gitdiff-parser, eslint-plugin-jest, and the framework doc
   on re-run (it de-dupes its own hook entries instead of stacking them), advisory by default.
 - Package is npx-publishable: `bin` → the built `dist/cli.mjs` (with shebang), a `prepare` build so
   `npx github:goolars/smelltest` works, a `files` allowlist shipping what `init` needs, and
-  `engines` widened to **Node ≥ 18** (the dist path runs there; `.ts` direct still needs ≥ 22.6).
+  `engines` widened to **Node ≥ 18** (the dist path runs there — `.ts` direct still needs ≥ 22.6).
 - Removed `install.mjs` — its wiring (including the `--dist` / Node-version guard) moved into
   `smelltest init`, so there's one install path, not two that can drift.
 - README rebuilt **viral-first**: a one-line tagline, the demo, the single `npx smelltest init`
-  command, and three scannable bullets up top; the deeper prose moved below the fold.
+  command, and three scannable bullets up top. The deeper prose moved below the fold.
 
 **Deferred to a later release (recorded honestly, not hidden)**
-- Stub-bodied-declaration rule (retire the `def …: pass` FN floor) — highest FP risk; needs the
+- Stub-bodied-declaration rule (retire the `def …: pass` FN floor) — highest FP risk. Needs the
   FP-bait corpus to guard it first.
 - Filename→classification NAMES map (Dockerfile / Makefile / shebang) + per-test-block tamper.
 - Optional, dynamically-imported AST adapter (tree-sitter or the project's own TS) — must stay a
@@ -147,8 +147,8 @@ reviewdog, parse-diff, gitdiff-parser, eslint-plugin-jest, and the framework doc
 
 ## v0.2.0 — structural rework
 
-Replaced lexeme detection with structural diff-grading; migrated to TypeScript; cut the
-Agent-SDK autonomous harness and the destructive-command guard; dropped the citation/network
+Replaced lexeme detection with structural diff-grading. Migrated to TypeScript. Cut the
+Agent-SDK autonomous harness and the destructive-command guard. Dropped the citation/network
 tier (100% offline). Headline reframed to the runaway-loop fuse.
 
 ## v0.1.0 — initial

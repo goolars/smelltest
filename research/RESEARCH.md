@@ -9,7 +9,7 @@ full [`board-trace.json`](board-trace.json).
 > **These JSON files are the historical build record**, captured before the structural rework.
 > They still name early-draft finding codes (`done.empty_diff`, `done.todo_only`, `tests_gamed`,
 > `scope.unrequested_file`) that were since consolidated or cut. The table below — and the shipped
-> code — is the authority on what actually exists; the artifacts are kept unedited for provenance,
+> code — is the authority on what actually exists. The artifacts are kept unedited for provenance,
 > not as a spec.
 
 ## Method (and its honest limits)
@@ -30,7 +30,7 @@ honest count and these caveats, which you should carry when reading the taxonomy
 ## What the board changed (the bullshit it caught in our own research)
 
 The study was gated by a six-member adversarial board at four stages (avg scores 7.0 / 6.5 /
-7.0 / 6.3 out of 10; 26 / 11 / 12 / 23 must-fix items). Among the corrections it forced:
+7.0 / 6.3 out of 10, 26 / 11 / 12 / 23 must-fix items). Among the corrections it forced:
 
 - **Deleted** a fabricated METR statistic that no source supported.
 - **Quarantined** an unverified "deny-rule bypass" security claim as a hypothesis.
@@ -45,7 +45,7 @@ The study was gated by a six-member adversarial board at four stages (avg scores
 
 This table lists the **codes that actually ship in v0.3** — no others. (An earlier draft of this
 file named codes — `done.empty_diff`, `done.todo_only`, `tests_gamed`, `scope.unrequested_file` —
-that the structural rework consolidated or cut; they were corrected here rather than left to imply
+that the structural rework consolidated or cut — they were corrected here rather than left to imply
 features that don't exist.)
 
 | Pain point | Freq / sev | smelltest's response (shipped) |
@@ -60,7 +60,7 @@ features that don't exist.)
 PreToolUse guard* (PP-07) was spun out as a separate security niche, and the *requested-vs-touched
 scope check* (PP-05) was not built — neither ships here. Pain points smelltest never claims to solve
 (usage limits, model-quality regressions, outages, account bans) are out of scope for a client-side
-acceptance gate; see the full taxonomy for all 22.
+acceptance gate. See the full taxonomy for all 22.
 
 ## The throughline
 

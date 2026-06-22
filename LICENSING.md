@@ -1,7 +1,7 @@
 # Licensing policy — how smelltest incorporates ideas from other projects
 
 smelltest is **MIT** (see [LICENSE](LICENSE)) and stays clean MIT. We learn from other
-open-source projects; we do so without contaminating that license. These are the rules every
+open-source projects. We do so without contaminating that license. These are the rules every
 contribution follows, and the standard the [CREDITS.md](CREDITS.md) attributions are held to.
 
 ## The rules

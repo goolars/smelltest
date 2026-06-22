@@ -22,16 +22,16 @@
 npx smelltest init
 ```
 
-Wires the hook into your project's `.claude/`. **Advisory by default** — it watches and *warns*;
-nothing blocks until you run `npx smelltest arm`. (Inside Claude Code you can instead
+Wires the hook into your project's `.claude/`. **Advisory by default** — it watches and *warns*.
+Nothing blocks until you run `npx smelltest arm`. (Inside Claude Code you can instead
 `/plugin marketplace add goolars/smelltest`.)
 
 ## What you get
 
-- 💸 **It caps the spend.** At each turn boundary it tallies your session's estimated cost; once you
+- 💸 **It caps the spend.** At each turn boundary it tallies your session's estimated cost. Once you
   cross your ceiling it lets the turn end with a receipt instead of nudging the agent to spend more —
   and `smelltest spend --ci` halts the next headless `claude -p` for the multi-call case. No other
-  Claude Code hook gates a session on $ at all. Computed deterministically from the transcript; an
+  Claude Code hook gates a session on $ at all. Computed deterministically from the transcript — an
   honest *estimate*, not your bill.
 - 🚫 **It catches the lie.** Claude claims *"done — tests pass"* but the diff added nothing real, or
   quietly skipped tests? You get a warning, not a silent green — graded from your **`git diff`**,
@@ -78,8 +78,8 @@ npx smelltest spend --latest
 
 **Honest about the number** — this is the whole credibility of the feature, so it's stated plainly:
 it is a **client-side estimate** (tokens × a pinned price snapshot) that can drift from your real
-Anthropic invoice; on Pro/Max it is a **token-equivalent budget, not literal dollars**; it bounds the
-**next** turn (a Stop hook fires at turn-end), not a single mid-turn blowout; and a brand-new model
+Anthropic invoice. On Pro/Max it is a **token-equivalent budget, not literal dollars**. It bounds the
+**next** turn (a Stop hook fires at turn-end), not a single mid-turn blowout. And a brand-new model
 not in the snapshot is counted as a **`notChecked` gap, never a silent $0**. The price table is dated
 and pinned (`pricing/litellm-snapshot.json`) and it goes stale. The math is pinned to an exact
 fixture in CI, and de-dupes the ~58% duplicate `(message.id+requestId)` rows that would otherwise
@@ -91,7 +91,7 @@ The other brake no completion-checker ships: a **self-owned, session-independent
 retries.** When enforcement is armed and the gate blocks to force a revision, it blocks **at most
 `maxRevisions` times** (default 2), then allows the stop — enforced by an append-only ledger with
 three independent brakes (per-session cap → session-independent ceiling → oscillation guard) and a
-verbatim *executing* halt-proof test. It exists because uncapped agent loops burn real money; this
+verbatim *executing* halt-proof test. It exists because uncapped agent loops burn real money — this
 one **cannot run away**, proven by execution, not assertion.
 
 ## The check: claims vs. the structure of the diff
@@ -107,18 +107,18 @@ lexeme scan and not an LLM judge:
 | `scope.blind_edit` | edited a file never read this session | note (advisory) |
 
 It **never certifies "verified"** — a self-graded claim can only fail to find a problem. Today it
-tops out at `warn`; arming turns a warn into a *bounded* block.
+tops out at `warn`. Arming turns a warn into a *bounded* block.
 
 ### Measured (internal regression floor, not an external benchmark)
 
 `node eval/run.ts` on a 35-case adversarial corpus (incl. real per-framework test-tamper idioms and
 false-positive baits): **precision 100% · 0 false positives**, and **recall 88%** — the two known
-evasions (a neutral completion with no claim verb; a function signature whose body is a stub) are
+evasions (a neutral completion with no claim verb, a function signature whose body is a stub) are
 **counted as the misses they are**, not bucketed away to keep the number at 100%. That 2-evasion
 **false-negative floor is CI-enforced**: if it rises, the build fails like a false positive does.
 These measure *the author's imagination of attacks*, not real-world evasion — they are a regression
 floor, not a catch-rate proof. The honest ceiling:
-model-free structure confirms the diff *changed in a way consistent with the claim*; it cannot
+model-free structure confirms the diff *changed in a way consistent with the claim* — it cannot
 confirm the code *does* what was claimed. A determined agent can pad inert-but-real lines past the
 line classifier. That is why `done.no_substance` is **warn, never a hard block**, until a
 false-positive rate is published for a stricter mode.
@@ -148,14 +148,14 @@ npm run demo           # watch the real fuse: block -> block -> allow (cap reach
 node src/cli.ts init --project /your/app   # what `npx smelltest init` runs under the hood
 ```
 
-Runs on **Node ≥ 18**. On Node ≥ 22.6 the hooks run the `.ts` directly (type-stripping); on older
+Runs on **Node ≥ 18**. On Node ≥ 22.6 the hooks run the `.ts` directly (type-stripping). On older
 Node, `init` wires the prebuilt `dist/*.mjs` instead and **refuses** to install `.ts` hooks a Node
 can't execute — a silently-inert guardrail is worse than a loud error.
 
 ## Safety model
 
 - **Advisory by default.** Nothing blocks until you `arm`. The structural findings stay warns.
-- **Self-owned bound.** The ledger caps retries; we rely on **no** platform backstop or
+- **Self-owned bound.** The ledger caps retries. We rely on **no** platform backstop or
   `stop_hook_active` signal — whether or not one exists, our bound is independent and load-bearing.
   A session-independent ceiling backs it up.
 - **Fail-open.** Any internal error degrades to *allow*. A broken gate never deadlocks a turn.
@@ -165,14 +165,14 @@ can't execute — a silently-inert guardrail is worse than a loud error.
 
 Drop a `.smelltest/config.json` in your repo to override any default for that project — honored by
 both the Stop hooks and the CLI. Object keys (e.g. `bounds`) are deep-merged over the shipped
-defaults; array keys (e.g. `disabledCodes`) are replaced wholesale. The escape hatch for a finding
+defaults. Array keys (e.g. `disabledCodes`) are replaced wholesale. The escape hatch for a finding
 you consider a false positive in your codebase is `disabledCodes`:
 
 ```jsonc
 {
   "disabledCodes": ["done.no_substance"],   // never warns here — but still recorded as a notChecked gap
-  "bounds": { "maxRevisions": 3 },          // tune the retry bound; set 0 to never block even when armed
-  "budget": { "ceilingUsd": 25 }            // the spend cap (est. $); set 0 to disable the $ brake
+  "bounds": { "maxRevisions": 3 },          // tune the retry bound — set 0 to never block even when armed
+  "budget": { "ceilingUsd": 25 }            // the spend cap (est. $) — set 0 to disable the $ brake
 }
 ```
 
@@ -199,7 +199,7 @@ Driven by an adversarial board review of the original v0.1 (per-version detail i
 
 **Isn't this just a linter?** No — a linter grades the code in isolation. smelltest grades the
 agent's *claim* about the code against the *diff structure*, at the Stop boundary. Its headline
-feature isn't detection at all; it's the bounded fuse on the retry loop.
+feature isn't detection at all — it's the bounded fuse on the retry loop.
 
 **Why not let the model check its own work?** Because the model's confidence is the thing that's
 broken — a model that wrongly believes it's done will also wrongly grade itself done. The gate uses
@@ -213,7 +213,7 @@ silence any finding per-repo with `disabledCodes`. The eval reports **0 false po
 network. It reads your transcript and `git diff` locally and exits.
 
 **What's the honest ceiling?** Model-free structure can confirm the diff changed *consistently with
-the claim*; it cannot confirm the code *works*. A determined agent can pad inert-but-real lines past
+the claim* — it cannot confirm the code *works*. A determined agent can pad inert-but-real lines past
 the classifier — a documented evasion in the eval. That's why it warns, not hard-blocks, in v0.3.
 
 **Does it work on Windows?** Yes — CI runs the suite on ubuntu **and** windows (Node 24), and the
@@ -223,7 +223,7 @@ hook normalizes paths for both.
 
 - **It raises the floor, not the ceiling.** A neutral honest-sounding completion with no claim verb
   ("the handler now returns 200") evades the scan — a documented FN in the eval.
-- **`done.no_substance` is a heuristic.** A few real-looking but inert lines clear it; that's why it
+- **`done.no_substance` is a heuristic.** A few real-looking but inert lines clear it — that's why it
   warns, never hard-blocks.
 - **Coverage is Stop-bound.** It gates the final claim of a turn, from the transcript + git.
 - **Unsupported languages record a gap, not a pass.** An unknown extension under a completion claim

@@ -14,13 +14,18 @@ transcript parser produces the evidence the kernel expects.
 > testing for — which looks like a broken gate but is not.
 
 Set up an empty throwaway repo plus a **sibling** work dir for the inputs. `$PLUGIN` is your
-smelltest checkout. (bash; works on macOS/Linux and Windows git-bash.)
+smelltest checkout. (bash — works on macOS/Linux and Windows git-bash.)
 
 ```bash
-REPO="$(mktemp -d)"; git -C "$REPO" init -q     # empty graded repo (no commits)
+REPO="$(mktemp -d)"                              # empty graded repo (no commits)
+git -C "$REPO" init -q
 WORK="$(mktemp -d)"                              # sibling dir — NOT inside $REPO
 # Windows git-bash: make the paths Node-resolvable (no-op on macOS/Linux):
-command -v cygpath >/dev/null && { REPO="$(cygpath -m "$REPO")"; WORK="$(cygpath -m "$WORK")"; }
+if command -v cygpath >/dev/null
+then
+  REPO="$(cygpath -m "$REPO")"
+  WORK="$(cygpath -m "$WORK")"
+fi
 
 # a transcript whose last assistant message claims completion (lives OUTSIDE the repo):
 printf '%s\n' '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"All done — implemented the feature."}]}}' > "$WORK/t.jsonl"
@@ -28,7 +33,7 @@ printf '%s\n' '{"type":"assistant","message":{"role":"assistant","content":[{"ty
 # the Stop-hook stdin, as a real file (avoids printf|node shell-quoting pitfalls):
 printf '{"session_id":"S","hook_event_name":"Stop","transcript_path":"%s","cwd":"%s"}' "$WORK/t.jsonl" "$REPO" > "$WORK/input.json"
 
-node "$PLUGIN/src/cli.ts" --root "$REPO" arm     # advisory by default; arm to enforce
+node "$PLUGIN/src/cli.ts" --root "$REPO" arm     # advisory by default — arm to enforce
 ```
 
 1. **Block on a false completion.** The transcript claims "done" but the tree is empty:

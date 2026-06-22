@@ -16,7 +16,7 @@ node eval/run.ts       # precision / recall / false-negative floor
 ```
 
 CI runs this on Node 24 across **ubuntu and windows**, plus a Node-18 `npm run build`. If you
-can't run Windows locally, that's fine — CI is the backstop; just don't hand-code paths.
+can't run Windows locally, that's fine — CI is the backstop. Just don't hand-code paths.
 
 ## Hard invariants (a PR that breaks one will be asked to change)
 
@@ -53,4 +53,4 @@ code from GPL/AGPL/LGPL projects — those are idea-only references at most.
 ## Commits & PRs
 
 Keep PRs focused. Describe what changed and paste the four-command gate output. New behavior needs a
-test; if it's not tested, it's not done — which is, after all, the whole point of this project.
+test. If it's not tested, it's not done — which is, after all, the whole point of this project.

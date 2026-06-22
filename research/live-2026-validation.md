@@ -4,7 +4,7 @@ The original taxonomy ([`RESEARCH.md`](RESEARCH.md)) was a ≤30-day complaint s
 the README positioning, the pain points were **re-validated against live sources** — a web-enabled
 research fan-out across the `anthropics/claude-code` issue tracker, Reddit, Hacker News, X, and dev
 blogs, plus the existing taxonomy as a baseline. This file records what the live data said and the
-positioning decision it drove. **It is a dated snapshot; issue numbers, reaction counts, and states
+positioning decision it drove. **It is a dated snapshot. Issue numbers, reaction counts, and states
 are as observed on 2026-06-22 and will drift.**
 
 ## What the live data confirmed
@@ -15,7 +15,7 @@ read suggests:
 - **False / fabricated "done" is broad and daily.** Recurring issues describe the agent claiming
   completion or "verified" with nothing actually wired up, and — the sharper variant — **fabricated
   or skipped test results presented as passing** ("reported 60 passed / 0 failed / 8 skipped as a
-  success, when the core feature was broken"; an agent reading an *old* clean test-results file and
+  success, when the core feature was broken" — an agent reading an *old* clean test-results file and
   reporting it as a fresh pass). Users describe a "rework rate" on work prior sessions "claimed was
   complete." This is the emotionally dominant, high-frequency pain.
 - **Self-looping hooks are the acute, begged-for primitive.** There are open feature requests for a
@@ -31,7 +31,7 @@ read suggests:
 
 ## The positioning decision
 
-**Lead with the fuse; the re-grade is the second act.**
+**Lead with the fuse. The re-grade is the second act.**
 
 - The bounded fuse is the part that is **rock-solid and uncontested**: existing "force completion"
   Stop hooks do *not* bound their own retries or address token cost. A hook that provably bounds its

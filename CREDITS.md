@@ -6,7 +6,7 @@ in our own code and copied no third-party source. Each project is credited with 
 regardless of whether we took code.
 
 Licenses below were verified against each project's GitHub repository (June 2026). No
-third-party source code is bundled or copied into smelltest; if that ever changes, the copied
+third-party source code is bundled or copied into smelltest. If that ever changes, the copied
 files, their permissive license, and (for Apache-2.0) any `NOTICE` will be recorded here and
 under `third_party/`.
 
@@ -20,7 +20,7 @@ under `third_party/`.
 - **License:** ISC (permissive) · **Borrow:** idea-only
 - A deterministic, model-free set of detection categories (empty-diff, no-op, test-tamper) —
   convergent validation that structural detection works. smelltest stays deliberately one-job
-  (claim-vs-diff); our `tests.tampered` and `done.no_substance` signals are our own
+  (claim-vs-diff). Our `tests.tampered` and `done.no_substance` signals are our own
   implementation of a shared idea, kept at the line level rather than file level.
 
 ### danger-js — https://github.com/danger/danger-js
@@ -83,12 +83,12 @@ under `third_party/`.
 ### pre-commit — https://github.com/pre-commit/pre-commit (incl. identify)
 - **License:** MIT © pre-commit dev team / © 2017 Chris Kuehl, Anthony Sottile · **Borrow:** idea-only
 - Validate-config-at-load + never-silent-zero-match (`src/config.ts validateConfig`,
-  `test-selector-miss`); identify's NAMES→EXTENSIONS→shebang **layering** concept noted for a
+  `test-selector-miss`). Identify's NAMES→EXTENSIONS→shebang **layering** concept noted for a
   future hand-authored table (the ~800-entry table is **not** imported).
 
 ### lefthook — https://github.com/evilmartians/lefthook
 - **License:** MIT © 2019 Arkweid · **Borrow:** idea-only
-- Binary file-type concept and validate-at-load DX. (No code; Go → not portable anyway.)
+- Binary file-type concept and validate-at-load DX. (No code — Go → not portable anyway.)
 
 ### Test-framework skip/disable idioms (API facts only, no code)
 The `skipMarkers` / `assertionMarkers` in `src/config.ts` are **hand-authored** from each
@@ -99,7 +99,7 @@ framework's documented idioms:
   (`@pytest.mark.skip/skipif/xfail`) · **Python unittest** — PSF docs · **RSpec** — MIT
   (`x`/`f` variants) · **Rust Reference** — MIT/Apache-2.0 (`#[ignore]` optional reason) ·
   **JUnit 5** — **EPL-2.0 (weak copyleft): PRINCIPLE / API-FACT ONLY** — the `@Disabled`/`@Ignore`
-  *names* are documented API facts; **no JUnit source was read or copied.**
+  *names* are documented API facts. **No JUnit source was read or copied.**
 
 ## v0.4 spend-governor sources (idea-only, no code copied)
 
@@ -107,7 +107,7 @@ framework's documented idioms:
 - **License:** MIT © BerriAI · **Borrow:** idea-only (schema shape + per-token price fields)
 - `pricing/litellm-snapshot.json` follows the **shape** of LiteLLM's
   `model_prices_and_context_window.json` (per-token input/output/cache fields). The figures are
-  Anthropic's own public list prices, hand-entered and dated; **no LiteLLM JSON or code was
+  Anthropic's own public list prices, hand-entered and dated. **No LiteLLM JSON or code was
   copied** — the file is our own, attributed here. A new model that isn't matched resolves to a
   `notChecked` gap, never a silent $0.
 
@@ -116,8 +116,8 @@ framework's documented idioms:
 - The approach of computing cost locally from the transcript `usage` token classes (since
   Claude Code stopped emitting a cost field), including **de-duplicating by `message.id +
   requestId`** and the **1h cache-write × 2** subtlety. Re-implemented from scratch in
-  `src/cost.ts` (verified against a real `~/.claude` transcript); no ccusage source was read or
-  copied. ccusage is a *reporter*; smelltest's differentiator is **enforcing** the cap in-loop.
+  `src/cost.ts` (verified against a real `~/.claude` transcript). No ccusage source was read or
+  copied. ccusage is a *reporter* — smelltest's differentiator is **enforcing** the cap in-loop.
 
 All idea-only. smelltest copies no third-party code and stays clean MIT.
 
