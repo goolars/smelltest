@@ -22,9 +22,22 @@
 npx smelltest init
 ```
 
-Wires the hook into your project's `.claude/`. **Advisory by default** — it watches and *warns*.
-Nothing blocks until you run `npx smelltest arm`. (Inside Claude Code you can instead
-`/plugin marketplace add goolars/smelltest`.)
+Run it **from the project you want guarded** — `init` wires the hook into *that* folder's
+`.claude/`. **Advisory by default** — it watches and *warns*. Nothing blocks until you run
+`npx smelltest arm`. (Inside Claude Code you can instead `/plugin marketplace add goolars/smelltest`.)
+
+**Windows / PowerShell.** If `npx` is blocked by `npx : ... die Ausführung von Skripts ... deaktiviert`
+(`PSSecurityException`), that is PowerShell's execution policy, not smelltest. Either run
+`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once, or call the `.cmd` shim: `npx.cmd ... init`.
+
+**For a permanent install**, prefer a clone over `npx github:` — the `npx` copy lives in a cache npm
+can prune later, which would quietly stop the hook (it fails *open*, so harmless, but it stops working):
+
+```bash
+git clone https://github.com/goolars/smelltest.git
+cd smelltest && npm install
+node src/cli.ts init --project /path/to/your/project   # or your home dir for a global guard
+```
 
 ## What you get
 
