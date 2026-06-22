@@ -20,7 +20,7 @@
   <text x="410" y="23" text-anchor="middle" class="dim">smelltest — model-free Stop gate</text>
 
   <g>
-    <text x="20" y="74"><tspan class="prompt">$ </tspan><tspan class="t">smelltest arm</tspan></text>
+    <text x="20" y="74"><tspan class="prompt">$ </tspan><tspan class="t">npx smelltest init &amp;&amp; npx smelltest arm</tspan></text>
     <text x="20" y="99" class="dim">smelltest enforcement ARMED. Bounded: max 2 revisions, session-independent ceiling, fail-open.</text>
 
     <text x="20" y="139" class="cmt"># the agent ends its turn:  "Implemented the feature. Tests pass."</text>

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // smelltest CLI. Runs the structural kernel (no model, no network) and toggles enforcement.
+//   smelltest init [--project <p>] [--dist]   wire the hooks into a project's .claude/ (one command)
 //   smelltest --latest            re-grade the newest transcript (advisory)
 //   smelltest --transcript <p>    re-grade a specific transcript
 //   smelltest --stdin             read a (validated) Evidence JSON from stdin
@@ -8,10 +9,98 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import url from "node:url";
 import { loadConfig, projectRoot } from "./config.ts";
 import { buildEvidence, findLatestTranscript } from "./evidence.ts";
 import { renderVerdict, smell } from "./kernel.ts";
 import type { Evidence } from "./types.ts";
+
+// `smelltest init` — the one-command install. Wires the Stop/PostToolUse hooks (and the /smell
+// commands) into a project's .claude/ from THIS package, resolving ${CLAUDE_PLUGIN_ROOT} to wherever
+// the package lives (works run-from-source OR via `npx smelltest`). Advisory by default. On Node
+// < 22.6 (or with --dist) it points the hooks at the built dist/*.mjs and refuses to wire .ts a Node
+// can't run — a silently-inert guardrail is worse than a loud error.
+function runInit(argv: string[]): void {
+  const get = (f: string) => {
+    const i = argv.indexOf(f);
+    return i >= 0 ? argv[i + 1] : null;
+  };
+  const here = path.dirname(url.fileURLToPath(import.meta.url));
+  const pluginRoot = path.resolve(here, ".."); // package root: parent of src/ (source) or dist/ (npx)
+  const pluginSlash = pluginRoot.replace(/\\/g, "/");
+  const target = path.resolve(get("--project") || process.cwd());
+  if (!fs.existsSync(target)) {
+    console.error(`smelltest init: project not found: ${target}`);
+    process.exit(1);
+  }
+
+  const [maj, min] = process.versions.node.split(".").map(Number);
+  const canRunTs = maj > 22 || (maj === 22 && min >= 6);
+  const useDist = argv.includes("--dist") || !canRunTs;
+  const distHook = path.join(pluginRoot, "dist", "hooks", "stop-gate.mjs");
+  if (useDist && !fs.existsSync(distHook)) {
+    const why = canRunTs
+      ? "--dist was requested"
+      : `Node ${process.versions.node} can't run .ts hooks (need >= 22.6)`;
+    console.error(
+      `smelltest init: ${why}, but no built dist/ at ${distHook}.\nBuild it first:  npm install && npm run build`,
+    );
+    process.exit(1);
+  }
+
+  const claude = path.join(target, ".claude");
+  for (const sub of ["commands", "agents", "skills"]) {
+    const src = path.join(pluginRoot, sub);
+    if (fs.existsSync(src)) fs.cpSync(src, path.join(claude, sub), { recursive: true });
+  }
+  const rewrite = (dir: string) => {
+    if (!fs.existsSync(dir)) return;
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) rewrite(p);
+      else if (/\.(md|json)$/.test(e.name))
+        fs.writeFileSync(p, fs.readFileSync(p, "utf8").replaceAll("${CLAUDE_PLUGIN_ROOT}", pluginSlash));
+    }
+  };
+  for (const sub of ["commands", "agents", "skills"]) rewrite(path.join(claude, sub));
+
+  let hooksRaw = fs
+    .readFileSync(path.join(pluginRoot, "hooks", "hooks.json"), "utf8")
+    .replaceAll("${CLAUDE_PLUGIN_ROOT}", pluginSlash);
+  if (useDist) hooksRaw = hooksRaw.replace(/\/hooks\/([\w-]+)\.ts/g, "/dist/hooks/$1.mjs");
+  const pluginHooks = JSON.parse(hooksRaw).hooks as Record<string, unknown[]>;
+  const settingsPath = path.join(claude, "settings.json");
+  let settings: { hooks?: Record<string, unknown[]> } = {};
+  if (fs.existsSync(settingsPath)) {
+    fs.copyFileSync(settingsPath, `${settingsPath}.bak`);
+    settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+  }
+  settings.hooks = settings.hooks || {};
+  for (const [event, arr] of Object.entries(pluginHooks)) {
+    if (event === "//") continue;
+    // Idempotent: drop any prior smelltest entries (by our hook script names) before re-adding, so
+    // re-running `init` never stacks duplicate hooks.
+    const kept = (settings.hooks[event] || []).filter(
+      (g) => !/stop-gate|note-blind-edit/.test(JSON.stringify(g)),
+    );
+    settings.hooks[event] = kept.concat(arr);
+  }
+  fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
+  fs.writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
+
+  const rel = path.relative(process.cwd(), settingsPath) || settingsPath;
+  console.log(
+    [
+      `✓ smelltest wired into ${rel}  (${useDist ? "dist/.mjs" : ".ts"} hooks, advisory)`,
+      "",
+      "  It watches and warns now — nothing blocks until you opt in.",
+      "  Arm it:   npx smelltest arm    bounded: max 2 nudges on the same finding, then it allows — it can't loop",
+      "  Watch it: npx smelltest demo   a real block -> block -> allow, on a throwaway repo",
+      "",
+      "  No model. No network. It reads your git diff, not your wallet.",
+    ].join("\n"),
+  );
+}
 
 function normalizeEvidence(p: any): Evidence {
   const okDiff = p && typeof p.diff === "object" && p.diff && Array.isArray(p.diff.hunks);
@@ -40,6 +129,8 @@ function main(): void {
     const i = argv.indexOf(f);
     return i >= 0 ? argv[i + 1] : null;
   };
+  if (argv.includes("init")) return runInit(argv);
+
   const root = get("--root") || projectRoot();
   // Pass `root` as the project layer so a CLI re-grade honors this repo's .smelltest/config.json
   // (disabledCodes, bounds) — same as the hooks do. Without it the CLI silently ignored it.
@@ -80,7 +171,9 @@ function main(): void {
       root,
     });
   } else {
-    console.error("smelltest: choose --stdin | --transcript <path> | --latest  (or arm | disarm | status)");
+    console.error(
+      "smelltest: choose --stdin | --transcript <path> | --latest  (or init | arm | disarm | status)",
+    );
     return;
   }
 

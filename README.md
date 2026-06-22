@@ -5,37 +5,42 @@
 ![license](https://img.shields.io/badge/license-MIT-blue.svg)
 ![types](https://img.shields.io/badge/TypeScript-strict-3178c6.svg)
 ![runtime deps](https://img.shields.io/badge/runtime%20deps-0-success.svg)
-![node](https://img.shields.io/badge/node-%E2%89%A522.6-339933.svg)
+![node](https://img.shields.io/badge/node-%E2%89%A518-339933.svg)
 ![tests](https://img.shields.io/badge/tests-30%20passing-success.svg)
 ![eval](https://img.shields.io/badge/eval-0%20FP%20on%2035--case%20corpus-success.svg)
 
-**A completion-forcing Stop hook is a known Claude Code pattern — and a known footgun.** Users report
-ones that run for the better part of an hour and eat an entire session's quota before anything breaks
-the cycle. A guardrail that loops on itself is worse than no guardrail.
-
-**smelltest is the Stop hook that bounds its own loop first.** When it blocks the agent to force a
-fix, it blocks **at most `maxRevisions` times** (default 2) on the same finding, then allows the stop
-— append-only ledger, session-independent ceiling, oscillation guard, fail-open, zero network. The
-guardrail provably **can't become the runaway it's guarding against.** That is the rock-solid core:
-it cannot loop, and it cannot quietly burn your tokens.
-
-**Then it checks the claim.** When Claude says *"done — tests pass,"* smelltest re-grades that against
-your **real `git diff`** before the turn ends: if the diff added nothing substantive, or quietly
-skipped tests, you get a warning — not a silent green. You can't fix an agent that *reports tests as
-passing on broken code* — the most-repeated complaint in the corpus this was built from — by asking
-the same model to grade its own homework.
-
-**Honest about the limits:** by default it **warns, it does not hard-block**, and a determined agent
-can still evade detection (`--no-verify`, padded inert lines). It catches the *lazy* false-"done,"
-not the *deliberately deceptive* one — the fuse is the part that always holds.
-
-**No model. No API. No network — it reads your diff, it doesn't ask Claude.** Advisory by default;
-bounded enforcement is one command away.
+> **Your AI coding agent says "done." smelltest checks the git diff and tells you when it's lying —
+> and it can't loop or burn your tokens doing it.** A model-free Claude Code Stop hook: no second
+> LLM, no network, zero dependencies.
 
 ![smelltest blocking a false completion, then allowing after the bound](docs/demo.svg)
 
-<sub>Composite of real `smelltest` output (every line is a string the gate actually emits) — watch
-it live against a throwaway repo with **`npm run demo`**.</sub>
+<sub>A composite of real `smelltest` output — reproduce it live with `npm run demo`.</sub>
+
+## Install — one command
+
+```bash
+npx smelltest init
+```
+
+Wires the hook into your project's `.claude/`. **Advisory by default** — it watches and *warns*;
+nothing blocks until you run `npx smelltest arm`. (Inside Claude Code you can instead
+`/plugin marketplace add <owner>/smelltest`.)
+
+## What you get
+
+- 🚫 **It catches the lie.** Claude claims *"done — tests pass"* but the diff added nothing real, or
+  quietly skipped tests? You get a warning, not a silent green — graded from your **`git diff`**,
+  never a second model's opinion.
+- ♾️ **It can't run away.** Other "force-completion" Stop hooks can loop on themselves for an hour and
+  eat your quota. smelltest blocks **at most twice** on the same finding, then allows — a self-owned
+  fuse with an *executing* halt-proof. The guardrail can't become the runaway.
+- 🔌 **It costs nothing to run.** No model, no API, no network, zero dependencies. It reads your local
+  diff and exits.
+
+**Honest by default:** it *warns*, it doesn't hard-block, and a determined agent can still evade it
+(`--no-verify`, padded lines). It catches the *lazy* false-"done," not the *deliberately deceptive*
+one — the fuse is the part that always holds.
 
 > Built research-first (a 775-observation complaint taxonomy, board-reviewed), rebuilt under
 > adversarial review, and **re-validated against live 2026 `anthropics/claude-code` issues** — which
@@ -81,33 +86,33 @@ confirm the code *does* what was claimed. A determined agent can pad inert-but-r
 line classifier. That is why `done.no_substance` is **warn, never a hard block**, until a
 false-positive rate is published for a stricter mode.
 
-## Install
+## Other ways to install
 
-**As a Claude Code plugin (primary):**
+`npx smelltest init` (above) is the one-command path. You can also:
+
+**As a Claude Code plugin:**
 
 ```
 /plugin marketplace add <owner>/smelltest      # <owner> = the GitHub slug once published
 /plugin install smelltest@smelltest-marketplace
 ```
 
-Then `/smell` (advisory — changes nothing), `/smell-loop on` (arm bounded enforcement),
+Either way you get `/smell` (advisory re-grade), `/smell-loop on` (arm bounded enforcement),
 `/smell-loop off`.
 
-**From source (contributors / zero-marketplace):**
+**From source (contributors):**
 
 ```bash
-git clone <repo> && cd smelltest
-npm install            # dev toolchain (only needed for build/lint/types — test+eval are zero-dep)
+git clone <repo> && cd smelltest && npm install
 node --test            # 30 tests across 4 files incl. the executing halt-proof + a live-hook e2e
 node eval/run.ts       # precision / recall / FN floor over the adversarial corpus
 npm run demo           # watch the real fuse: block -> block -> allow (cap reached)
-node install.mjs --project /your/app   # wire the hooks into a project's .claude/
+node src/cli.ts init --project /your/app   # what `npx smelltest init` runs under the hood
 ```
 
-Requires **Node ≥ 22.6** (the hooks run the `.ts` directly via type-stripping). On older Node, run
-`npm run build` for a Node-18 `dist/` bundle and install with `node install.mjs --project /your/app
---dist` — the installer refuses to wire `.ts` hooks a Node it can't execute (a silently-inert
-guardrail is worse than a loud error).
+Runs on **Node ≥ 18**. On Node ≥ 22.6 the hooks run the `.ts` directly (type-stripping); on older
+Node, `init` wires the prebuilt `dist/*.mjs` instead and **refuses** to install `.ts` hooks a Node
+can't execute — a silently-inert guardrail is worse than a loud error.
 
 ## Safety model
 

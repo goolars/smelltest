@@ -4,10 +4,22 @@
   "description": "A self-bounding Claude Code Stop hook: it can't loop or burn your session like other hooks can, and it flags 'done / tests pass' the real git diff doesn't back. Model-free, offline, zero dependencies.",
   "type": "module",
   "bin": {
-    "smelltest": "src/cli.ts"
+    "smelltest": "dist/cli.mjs"
   },
+  "files": [
+    "dist",
+    "src",
+    "hooks",
+    "commands",
+    "agents",
+    "skills",
+    ".claude-plugin",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "engines": {
-    "node": ">=22.6"
+    "node": ">=18"
   },
   "scripts": {
     "test": "node --test",
@@ -17,6 +29,7 @@
     "eval": "node eval/run.ts",
     "demo": "node eval/demo.mjs",
     "build": "node scripts/build.mjs",
+    "prepare": "node scripts/build.mjs",
     "smelltest": "node src/cli.ts"
   },
   "devDependencies": {

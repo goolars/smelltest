@@ -59,6 +59,18 @@ reviewdog, parse-diff, gitdiff-parser, eslint-plugin-jest, and the framework doc
   (warn, not a silent green)." No new capability claimed — only the framing changed to match the
   evidence and the code.
 
+**One-command install (`npx smelltest init`)**
+- `init` is now a first-class CLI subcommand: `npx smelltest init` wires the Stop/PostToolUse hooks
+  into the current project's `.claude/` in one step — no clone, no `--project` needed, **idempotent**
+  on re-run (it de-dupes its own hook entries instead of stacking them), advisory by default.
+- Package is npx-publishable: `bin` → the built `dist/cli.mjs` (with shebang), a `prepare` build so
+  `npx github:<owner>/smelltest` works, a `files` allowlist shipping what `init` needs, and
+  `engines` widened to **Node ≥ 18** (the dist path runs there; `.ts` direct still needs ≥ 22.6).
+- Removed `install.mjs` — its wiring (including the `--dist` / Node-version guard) moved into
+  `smelltest init`, so there's one install path, not two that can drift.
+- README rebuilt **viral-first**: a one-line tagline, the demo, the single `npx smelltest init`
+  command, and three scannable bullets up top; the deeper prose moved below the fold.
+
 **Deferred to a later release (recorded honestly, not hidden)**
 - Stub-bodied-declaration rule (retire the `def …: pass` FN floor) — highest FP risk; needs the
   FP-bait corpus to guard it first.
