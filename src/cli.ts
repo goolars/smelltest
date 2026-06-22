@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // smelltest CLI. Runs the structural kernel (no model, no network) and toggles enforcement.
 //   smelltest init [--project <p>] [--dist]   wire the hooks into a project's .claude/ (one command)
+//   smelltest demo                drive the real Stop hook on a throwaway repo: block -> block -> allow
 //   smelltest spend [--latest|--transcript <p>] [--json] [--ci]   estimated session token/$ cost
 //   smelltest --latest            re-grade the newest transcript (advisory)
 //   smelltest --transcript <p>    re-grade a specific transcript
@@ -8,7 +9,9 @@
 //   smelltest --ci                exit 1 on a warn (for pipelines)
 //   smelltest arm | disarm | status
 
+import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import url from "node:url";
 import { loadConfig, projectRoot } from "./config.ts";
@@ -16,6 +19,75 @@ import { renderSpend } from "./cost.ts";
 import { buildEvidence, findLatestTranscript } from "./evidence.ts";
 import { renderVerdict, smell } from "./kernel.ts";
 import type { Evidence } from "./types.ts";
+
+// `smelltest demo` — a self-contained live demo of the shipped Stop hook (the path the init message
+// and README promise). Spins up a throwaway git repo + a false-"done" transcript, arms the gate,
+// disables the oscillation guard so the per-session cap is what halts it, and drives the REAL hook
+// three times: block -> block -> allow_cap. No mocks. Resolves the hook for source OR built layout.
+function runDemo(): void {
+  const here = path.dirname(url.fileURLToPath(import.meta.url));
+  const pluginRoot = path.resolve(here, ".."); // package root: parent of src/ (source) or dist/ (npx)
+  const [maj, min] = process.versions.node.split(".").map(Number);
+  const canRunTs = maj > 22 || (maj === 22 && min >= 6);
+  const distHook = path.join(pluginRoot, "dist", "hooks", "stop-gate.mjs");
+  const hook = canRunTs ? path.join(pluginRoot, "hooks", "stop-gate.ts") : distHook;
+  if (!canRunTs && !fs.existsSync(distHook)) {
+    console.error(
+      `smelltest demo: Node ${process.versions.node} needs the built dist/ — run \`npm run build\`.`,
+    );
+    process.exit(1);
+  }
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), "smelltest-demo-"));
+  const work = fs.mkdtempSync(path.join(os.tmpdir(), "smelltest-demo-work-"));
+  try {
+    execFileSync("git", ["init", "-q"], { cwd: repo });
+    const transcript = path.join(work, "t.jsonl");
+    const claim = "Implemented the feature. Tests pass.";
+    fs.writeFileSync(
+      transcript,
+      `${JSON.stringify({ type: "assistant", message: { role: "assistant", content: [{ type: "text", text: claim }] } })}\n`,
+    );
+    fs.writeFileSync(path.join(repo, "auth.js"), "// TODO: wire this up\n"); // a comment, 0 substantive lines
+    fs.mkdirSync(path.join(repo, ".smelltest"), { recursive: true });
+    fs.writeFileSync(path.join(repo, ".smelltest", "armed"), `${new Date().toISOString()}\n`);
+    fs.writeFileSync(
+      path.join(repo, ".smelltest", "config.json"),
+      JSON.stringify({ bounds: { oscillationGuard: false } }),
+    );
+    const input = JSON.stringify({
+      session_id: "demo",
+      hook_event_name: "Stop",
+      transcript_path: transcript,
+      cwd: repo,
+    });
+
+    console.log(
+      `\n  smelltest live demo — armed gate, the agent claims "${claim}" but the diff is a comment\n`,
+    );
+    for (let i = 1; i <= 3; i++) {
+      const out = (
+        spawnSync(process.execPath, [hook], {
+          input,
+          env: { ...process.env, CLAUDE_PROJECT_DIR: repo },
+          encoding: "utf8",
+        }).stdout || ""
+      ).trim();
+      const decision = /"decision":"block"/.test(out) ? "BLOCK" : "ALLOW";
+      console.log(`  turn ${i}:  ${decision}   ${(out.split("\n")[0] || "").slice(0, 140)}`);
+    }
+    console.log("\n  ledger (the self-owned fuse, append-only):");
+    for (const line of fs
+      .readFileSync(path.join(repo, ".smelltest", "ledger.jsonl"), "utf8")
+      .trim()
+      .split("\n")) {
+      console.log(`    ${JSON.parse(line).event}`);
+    }
+    console.log("\n  ^ blocked at most twice, then the cap allowed the stop. It cannot run away.\n");
+  } finally {
+    fs.rmSync(repo, { recursive: true, force: true });
+    fs.rmSync(work, { recursive: true, force: true });
+  }
+}
 
 // `smelltest init` — the one-command install. Wires the Stop/PostToolUse hooks (and the /smell
 // commands) into a project's .claude/ from THIS package, resolving ${CLAUDE_PLUGIN_ROOT} to wherever
@@ -135,6 +207,10 @@ function main(): void {
     runInit(argv);
     return;
   }
+  if (argv.includes("demo")) {
+    runDemo();
+    return;
+  }
 
   const root = get("--root") || projectRoot();
   // Pass `root` as the project layer so a CLI re-grade honors this repo's .smelltest/config.json
@@ -196,7 +272,7 @@ function main(): void {
     });
   } else {
     console.error(
-      "smelltest: choose --stdin | --transcript <path> | --latest  (or init | arm | disarm | status)",
+      "smelltest: choose --stdin | --transcript <path> | --latest  (or init | demo | spend | arm | disarm | status)",
     );
     return;
   }

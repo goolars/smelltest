@@ -14,7 +14,7 @@
 
 ![smelltest blocking a false completion, then allowing after the bound](docs/demo.svg)
 
-<sub>A composite of real `smelltest` output — reproduce it live with `npm run demo`.</sub>
+<sub>A composite of real `smelltest` output — reproduce it live with `npx smelltest demo`.</sub>
 
 ## Install — one command
 
