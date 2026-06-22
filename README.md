@@ -1,7 +1,7 @@
 # smelltest
 
-<!-- Re-add the CI status badge after the first push, once Actions has run green on the real slug:
-     [![CI](https://github.com/<owner>/smelltest/actions/workflows/ci.yml/badge.svg)](...) -->
+<!-- After the first push + green CI run, uncomment this badge:
+     [![CI](https://github.com/goolars/smelltest/actions/workflows/ci.yml/badge.svg)](https://github.com/goolars/smelltest/actions/workflows/ci.yml) -->
 ![license](https://img.shields.io/badge/license-MIT-blue.svg)
 ![types](https://img.shields.io/badge/TypeScript-strict-3178c6.svg)
 ![runtime deps](https://img.shields.io/badge/runtime%20deps-0-success.svg)
@@ -25,7 +25,7 @@ npx smelltest init
 
 Wires the hook into your project's `.claude/`. **Advisory by default** — it watches and *warns*;
 nothing blocks until you run `npx smelltest arm`. (Inside Claude Code you can instead
-`/plugin marketplace add <owner>/smelltest`.)
+`/plugin marketplace add goolars/smelltest`.)
 
 ## What you get
 
@@ -93,7 +93,7 @@ false-positive rate is published for a stricter mode.
 **As a Claude Code plugin:**
 
 ```
-/plugin marketplace add <owner>/smelltest      # <owner> = the GitHub slug once published
+/plugin marketplace add goolars/smelltest
 /plugin install smelltest@smelltest-marketplace
 ```
 
@@ -208,4 +208,4 @@ Guardrails AI, and others) — every borrow is idea-only and credited in [CREDIT
 under the policy in [LICENSING.md](LICENSING.md). smelltest copies no third-party code and stays
 clean MIT.
 
-MIT © 2026 Lars Godoy
+MIT © 2026 goolars

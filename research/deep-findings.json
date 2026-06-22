@@ -17,7 +17,7 @@
     {
       "area": "CODE CITATIONS — pin to the market-compass/ tree; board read a stale copy",
       "finding": "The board's 'files absent / line-number drift' complaint is an artifact of reading the wrong tree (conquer/ or an older mc_v8 copy). Against market-compass/ EVERY load-bearing code citation matches the quoted lines exactly. Re-verified this session: engine-light.ts:281-292 (demote codomain {single,inferred}), :303-309 (cleanCitations filters valid.has only, slice(0,4), NO domain dedupe), :199 (last_verified:this.today); engine-proxy.ts:118-128 (keyedFetch(service,path,payload) — no signal param, private 28s controller); research-backbone.ts:306 & :325 (two bare Promise.all batches); competitor-verify.ts:398-417 (Promise.race([run(),setTimeout]) — run()'s inner controllers NOT aborted on budget-win); category-regime.ts:571-572 (confidence:'single', citations:[] — the curated-layer contradiction is REAL); report.$reportId.tsx:204-227 (module shownReports Set + lastGoodReports Map + R136 comment).",
-      "evidence": "Direct Read of all cited files under C:/Users/larsg/OneDrive/Dokumente/Buisiness/Automising my life/market-compass/src/lib/conquer/ and /src/routes/ this session; line numbers matched verbatim.",
+      "evidence": "Direct Read of all cited files under market-compass/src/lib/conquer/ and /src/routes/ this session; line numbers matched verbatim.",
       "implication": "Pin all code citations to the market-compass/ tree (ideally a commit SHA) so reviewers stop chasing the conquer/ copy. The code-grounded layer of A3/A4/A5 survives adversarial verification intact — these are ship-worthy.",
       "confidence": "high"
     },

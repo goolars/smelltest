@@ -1,6 +1,6 @@
 {
   "name": "smelltest-marketplace",
-  "owner": { "name": "Lars Godoy" },
+  "owner": { "name": "goolars" },
   "plugins": [
     {
       "name": "smelltest",

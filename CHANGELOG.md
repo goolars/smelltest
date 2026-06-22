@@ -64,7 +64,7 @@ reviewdog, parse-diff, gitdiff-parser, eslint-plugin-jest, and the framework doc
   into the current project's `.claude/` in one step — no clone, no `--project` needed, **idempotent**
   on re-run (it de-dupes its own hook entries instead of stacking them), advisory by default.
 - Package is npx-publishable: `bin` → the built `dist/cli.mjs` (with shebang), a `prepare` build so
-  `npx github:<owner>/smelltest` works, a `files` allowlist shipping what `init` needs, and
+  `npx github:goolars/smelltest` works, a `files` allowlist shipping what `init` needs, and
   `engines` widened to **Node ≥ 18** (the dist path runs there; `.ts` direct still needs ≥ 22.6).
 - Removed `install.mjs` — its wiring (including the `--dist` / Node-version guard) moved into
   `smelltest init`, so there's one install path, not two that can drift.
