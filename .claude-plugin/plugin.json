@@ -1,6 +1,6 @@
 {
   "name": "smelltest",
-  "description": "A self-bounding Claude Code Stop hook: it can't loop or burn your session like other hooks can, and it flags done/tests-pass claims the real git diff doesn't back. Model-free, offline, zero dependencies.",
+  "description": "A Claude Code hook that catches your agent's fake \"done\" against the git diff — and can't loop or burn your tokens.",
   "version": "0.3.0",
   "author": { "name": "goolars" },
   "license": "MIT",
