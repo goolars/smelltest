@@ -1,5 +1,38 @@
 # Changelog
 
+## v0.4.0 — the spend / runaway governor (research + board specced)
+
+A web research fan-out + a 4-member board (staff eng / DevRel / OSS maintainer / skeptic)
+converged **unanimously** on this: the most-screamed-for, model-free-buildable, uncontested gap is
+an **in-loop spend cap**. Native `--max-budget-usd` bounds a *single* `claude -p`; the pain that
+burned users `$313 in 8.5h` and `$6k overnight` is the *multi-invocation* daemon loop — and no Stop
+hook receives a cost field. smelltest now closes it.
+
+**Added — the spend governor**
+- **Deterministic cost engine** (`src/cost.ts`): walks the session transcript, **de-dupes assistant
+  turns by `(message.id + requestId)`** (verified: ~58% of rows are duplicates — naive summing
+  ~triples the figure), multiplies the token classes by a **pinned, dated price snapshot**
+  (`pricing/litellm-snapshot.json`), and sums. Flat `usage.*` primary, `usage.iterations[]`
+  fallback; **1h cache writes price at input × 2.** Pure, offline, no clock.
+- **A new `allow_budget` brake** (`src/gate.ts`): when armed and cumulative session spend crosses
+  `budget.ceilingUsd`, the Stop gate **allows the stop with a loud receipt** — checked *first*, and
+  an *allow* (it only shortens a session), so it rides the existing executing halt-proof and **can
+  never itself become the runaway.** One armed flag, one ledger, one bounded decision.
+- **`smelltest spend [--latest|--transcript <p>] [--json] [--ci]`** — the same engine as a CLI: a
+  dry-run receipt in 60 seconds, and `--ci` exits 1 over the ceiling for headless `claude -p`
+  watchdogs (the #57719 multi-invocation case).
+- **Fail-soft, never silent.** An unknown/new model id → `notChecked` (surfaced as a lower bound),
+  **never** a false "$0 / within budget." Verified on a real transcript: every current model priced
+  via longest-prefix family match, `<synthetic>` and unknown → notChecked.
+- **Honest by construction.** Every figure is labelled an **estimate** (client-side token × price,
+  drifts from the real bill; a token-equivalent budget on Pro/Max; bounds the *next* turn). Stated
+  in the receipt and the README.
+- **Zero-config:** a sane default ceiling ships in `DEFAULTS`; per-repo override via
+  `.smelltest/config.json → budget.ceilingUsd`. Install is still the one command `npx smelltest init`.
+- **Tests (+9, now 39):** exact-cost fixture (dedup + 1h-cache×2 + fail-soft), the `allow_budget`
+  branch, and an e2e driving the real hook to an `allow_budget` receipt. Sources attributed
+  idea-only in CREDITS (LiteLLM, ccusage — both MIT).
+
 ## v0.3.0 — hardening (research-driven, license-clean)
 
 Driven by a deep source read of high-star comparables (tdd-guard, pre-commit, lefthook,

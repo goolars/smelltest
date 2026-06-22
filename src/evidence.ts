@@ -7,6 +7,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { loadPrices, sessionCost } from "./cost.ts";
 import type { DiffHunk, DiffInfo, Evidence } from "./types.ts";
 
 function git(root: string, args: string[]): string {
@@ -269,6 +270,7 @@ export function buildEvidence(opts: {
     finalMessage,
     diff: gitDiffInfo(root),
     scope: { filesRead: entries.length ? tf.read : null, filesEdited: tf.edited },
+    spend: entries.length ? sessionCost(entries, loadPrices()) : null,
   };
 }
 

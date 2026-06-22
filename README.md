@@ -6,12 +6,12 @@
 ![types](https://img.shields.io/badge/TypeScript-strict-3178c6.svg)
 ![runtime deps](https://img.shields.io/badge/runtime%20deps-0-success.svg)
 ![node](https://img.shields.io/badge/node-%E2%89%A518-339933.svg)
-![tests](https://img.shields.io/badge/tests-30%20passing-success.svg)
+![tests](https://img.shields.io/badge/tests-39%20passing-success.svg)
 ![eval](https://img.shields.io/badge/eval-0%20FP%20on%2035--case%20corpus-success.svg)
 
-> **Your AI coding agent says "done." smelltest checks the git diff and tells you when it's lying —
-> and it can't loop or burn your tokens doing it.** A model-free Claude Code Stop hook: no second
-> LLM, no network, zero dependencies.
+> **Point smelltest at a runaway agent and it hard-stops it at a token/$ ceiling — and catches the
+> agent's fake "done" against your git diff on the way out.** The only Claude Code hook that
+> *enforces* a spend cap in-loop. Model-free, no network, zero dependencies.
 
 ![smelltest blocking a false completion, then allowing after the bound](docs/demo.svg)
 
@@ -29,6 +29,10 @@ nothing blocks until you run `npx smelltest arm`. (Inside Claude Code you can in
 
 ## What you get
 
+- 💸 **It stops the bleed.** When your session's cumulative spend crosses a ceiling, smelltest
+  **stops the agent** — the only Claude Code hook that *enforces* a budget in-loop (every other tool
+  just reports after the fact). Computed deterministically from the transcript; an honest *estimate*,
+  not your bill.
 - 🚫 **It catches the lie.** Claude claims *"done — tests pass"* but the diff added nothing real, or
   quietly skipped tests? You get a warning, not a silent green — graded from your **`git diff`**,
   never a second model's opinion.
@@ -48,9 +52,36 @@ one — the fuse is the part that always holds.
 > [`research/RESEARCH.md`](research/RESEARCH.md), [`research/live-2026-validation.md`](research/live-2026-validation.md),
 > and the honest numbers below.
 
-## The headline: a self-owned runaway-loop fuse
+## Cap your spend — the governor
 
-The feature no completion-checker ships: a **self-owned, session-independent bound on its own
+`claude` has no in-session `--max-cost`; the runaways that burned people **$313 in 8.5h** and **$6k
+overnight** were loops where each call looked fine but the *cumulative* spend didn't. smelltest adds
+the missing brake: when armed and your session's estimated cost crosses `budget.ceilingUsd` (default
+`$10`), the Stop gate **stops the turn** with a receipt. It's checked first and only ever *shortens*
+a session — so the breaker provably can't become the runaway it guards.
+
+See it on your own latest session in one command — no install, no arming:
+
+```bash
+npx smelltest spend --latest
+# smelltest spend: ~$0.84 / 412k tokens (est.) — ceiling $10.00, 8% used
+```
+
+`--ci` exits non-zero over the ceiling, so an external script can hard-halt the **next** headless
+`claude -p` invocation (the orchestrated-watchdog case native `--max-budget-usd` doesn't cover).
+
+**Honest about the number** — this is the whole credibility of the feature, so it's stated plainly:
+it is a **client-side estimate** (tokens × a pinned price snapshot) that can drift from your real
+Anthropic invoice; on Pro/Max it is a **token-equivalent budget, not literal dollars**; it bounds the
+**next** turn (a Stop hook fires at turn-end), not a single mid-turn blowout; and a brand-new model
+not in the snapshot is counted as a **`notChecked` gap, never a silent $0**. The price table is dated
+and pinned (`pricing/litellm-snapshot.json`) and it goes stale. The math is pinned to an exact
+fixture in CI, and de-dupes the ~58% duplicate `(message.id+requestId)` rows that would otherwise
+~triple the figure.
+
+## And it can't loop — the self-owned fuse
+
+The other brake no completion-checker ships: a **self-owned, session-independent bound on its own
 retries.** When enforcement is armed and the gate blocks to force a revision, it blocks **at most
 `maxRevisions` times** (default 2), then allows the stop — enforced by an append-only ledger with
 three independent brakes (per-session cap → session-independent ceiling → oscillation guard) and a
@@ -104,8 +135,9 @@ Either way you get `/smell` (advisory re-grade), `/smell-loop on` (arm bounded e
 
 ```bash
 git clone <repo> && cd smelltest && npm install
-node --test            # 30 tests across 4 files incl. the executing halt-proof + a live-hook e2e
+node --test            # 39 tests across 5 files incl. the halt-proof, the exact-cost fixture + e2e
 node eval/run.ts       # precision / recall / FN floor over the adversarial corpus
+node src/cli.ts spend --latest   # estimated $ / tokens for your newest session
 npm run demo           # watch the real fuse: block -> block -> allow (cap reached)
 node src/cli.ts init --project /your/app   # what `npx smelltest init` runs under the hood
 ```
@@ -133,7 +165,8 @@ you consider a false positive in your codebase is `disabledCodes`:
 ```jsonc
 {
   "disabledCodes": ["done.no_substance"],   // never warns here — but still recorded as a notChecked gap
-  "bounds": { "maxRevisions": 3 }           // tune the retry bound; set 0 to never block even when armed
+  "bounds": { "maxRevisions": 3 },          // tune the retry bound; set 0 to never block even when armed
+  "budget": { "ceilingUsd": 25 }            // the spend cap (est. $); set 0 to disable the $ brake
 }
 ```
 
@@ -194,10 +227,11 @@ hook normalizes paths for both.
 ## Layout
 
 ```
-src/                    types · config · ledger(fuse) · claims · substance · reconcile · kernel · gate · evidence · stdin · cli
+src/                    types · config · ledger(fuse) · cost(spend) · claims · substance · reconcile · kernel · gate · evidence · stdin · cli
 hooks/                  stop-gate.ts · note-blind-edit.ts · hooks.json
+pricing/                litellm-snapshot.json (pinned, dated price table)
 eval/                   run.ts · demo.mjs · corpus/cases.json (adversarial)
-test/                   smell · gate · evidence · e2e-stop-gate   (30 tests, node --test)
+test/                   smell · gate · evidence · cost · e2e-stop-gate   (39 tests, node --test)
 .github/workflows/ci.yml  tsconfig.json  biome.json  SMOKE-TEST.md  docs/  research/
 ```
 

@@ -5,6 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { loadConfig, projectRoot } from "../src/config.ts";
+import { renderSpend } from "../src/cost.ts";
 import { buildEvidence } from "../src/evidence.ts";
 import { decideStop } from "../src/gate.ts";
 import { smell } from "../src/kernel.ts";
@@ -26,17 +27,30 @@ async function main(): Promise<void> {
 
     const sessionId = input.session_id || "unknown";
     const ceiling = cfg.bounds.absoluteIterationCeiling ?? 4;
-    const state = {
-      used: ledger.revisionCount(root, cfg, sessionId),
-      recentBlocks: ledger.recentBlockCount(root, cfg, ceiling * 3),
-      lastBlockCodes: ledger.lastBlock(root, cfg, sessionId)?.codes ?? null,
-    };
 
     const ev = buildEvidence({ transcriptPath: input.transcript_path, root });
     ev.sessionId = sessionId;
     const verdict = smell(ev, cfg);
+    const spend = ev.spend ?? null;
+
+    const state = {
+      used: ledger.revisionCount(root, cfg, sessionId),
+      recentBlocks: ledger.recentBlockCount(root, cfg, ceiling * 3),
+      lastBlockCodes: ledger.lastBlock(root, cfg, sessionId)?.codes ?? null,
+      spendUsd: spend?.usd ?? null,
+    };
 
     switch (decideStop(state, verdict, cfg)) {
+      case "allow_budget":
+        ledger.append(root, cfg, {
+          event: "allow_budget",
+          sessionId,
+          usd: spend?.usd,
+          ceiling: cfg.budget.ceilingUsd,
+        });
+        return allow(
+          `smelltest: spend ceiling $${cfg.budget.ceilingUsd.toFixed(2)} reached — ${spend ? renderSpend(spend, cfg.budget.ceilingUsd) : "estimate"}. Allowing stop. (Estimate, not your bill; a token-equivalent budget on Pro/Max. Raise: .smelltest/config.json -> budget.ceilingUsd.)`,
+        );
       case "allow_cap":
         ledger.append(root, cfg, {
           event: "allow_cap",
@@ -61,7 +75,13 @@ async function main(): Promise<void> {
           sessionId,
           codes: verdict.codes,
           notChecked: verdict.notChecked.map((n) => n.code),
+          spendUsd: spend?.usd,
         });
+        // Per-turn receipt while armed: show the running spend so the user sees the governor
+        // working BEFORE any overrun (and not as a silent no-op).
+        if (cfg.budget?.enabled && cfg.budget.ceilingUsd > 0 && spend && spend.tokens > 0) {
+          return allow(`smelltest: ${renderSpend(spend, cfg.budget.ceilingUsd)}`);
+        }
         return process.exit(0);
       default: {
         // block

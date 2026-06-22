@@ -1,6 +1,8 @@
 // smelltest — single source of truth for the engine's shapes.
 // Erasable types only (Node strips them at runtime; no enums/namespaces).
 
+import type { SpendInfo } from "./cost.ts";
+
 export type ClaimKind = "implemented" | "fixed" | "tested" | "removed" | "refactored";
 
 // v1 emits only 'warn' and 'advisory'. 'block' is reserved for v2, once a
@@ -42,6 +44,7 @@ export interface Evidence {
   finalMessage: string;
   diff: DiffInfo;
   scope: Scope;
+  spend?: SpendInfo | null; // deterministic session cost estimate (the spend governor); null when not computed
 }
 
 export interface Finding {

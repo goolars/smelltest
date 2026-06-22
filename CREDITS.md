@@ -101,6 +101,24 @@ framework's documented idioms:
   **JUnit 5** — **EPL-2.0 (weak copyleft): PRINCIPLE / API-FACT ONLY** — the `@Disabled`/`@Ignore`
   *names* are documented API facts; **no JUnit source was read or copied.**
 
+## v0.4 spend-governor sources (idea-only, no code copied)
+
+### LiteLLM — https://github.com/BerriAI/litellm
+- **License:** MIT © BerriAI · **Borrow:** idea-only (schema shape + per-token price fields)
+- `pricing/litellm-snapshot.json` follows the **shape** of LiteLLM's
+  `model_prices_and_context_window.json` (per-token input/output/cache fields). The figures are
+  Anthropic's own public list prices, hand-entered and dated; **no LiteLLM JSON or code was
+  copied** — the file is our own, attributed here. A new model that isn't matched resolves to a
+  `notChecked` gap, never a silent $0.
+
+### ccusage — https://github.com/ryoppippi/ccusage
+- **License:** MIT © ryoppippi · **Borrow:** idea-only (cost-from-tokens algorithm)
+- The approach of computing cost locally from the transcript `usage` token classes (since
+  Claude Code stopped emitting a cost field), including **de-duplicating by `message.id +
+  requestId`** and the **1h cache-write × 2** subtlety. Re-implemented from scratch in
+  `src/cost.ts` (verified against a real `~/.claude` transcript); no ccusage source was read or
+  copied. ccusage is a *reporter*; smelltest's differentiator is **enforcing** the cap in-loop.
+
 All idea-only. smelltest copies no third-party code and stays clean MIT.
 
 ---

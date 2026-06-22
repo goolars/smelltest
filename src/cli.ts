@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // smelltest CLI. Runs the structural kernel (no model, no network) and toggles enforcement.
 //   smelltest init [--project <p>] [--dist]   wire the hooks into a project's .claude/ (one command)
+//   smelltest spend [--latest|--transcript <p>] [--json] [--ci]   estimated session token/$ cost
 //   smelltest --latest            re-grade the newest transcript (advisory)
 //   smelltest --transcript <p>    re-grade a specific transcript
 //   smelltest --stdin             read a (validated) Evidence JSON from stdin
@@ -11,6 +12,7 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 import { loadConfig, projectRoot } from "./config.ts";
+import { renderSpend } from "./cost.ts";
 import { buildEvidence, findLatestTranscript } from "./evidence.ts";
 import { renderVerdict, smell } from "./kernel.ts";
 import type { Evidence } from "./types.ts";
@@ -136,6 +138,25 @@ function main(): void {
   // (disabledCodes, bounds) — same as the hooks do. Without it the CLI silently ignored it.
   const cfg = loadConfig(get("--plugin-root") || process.env.CLAUDE_PLUGIN_ROOT || undefined, root);
   const armedFile = path.join(root, cfg.armedFlagPath);
+
+  // `smelltest spend [--latest|--transcript <p>] [--json] [--ci]` — the standalone cost surface
+  // (same engine as the Stop gate). --ci exits 1 over the ceiling, for headless `claude -p` watchdogs.
+  if (argv.includes("spend")) {
+    const tpath = has("--latest") ? findLatestTranscript() : get("--transcript");
+    if (!tpath) {
+      console.error("smelltest spend: choose --latest or --transcript <path>");
+      process.exit(2);
+    }
+    const s = buildEvidence({ transcriptPath: tpath, root }).spend;
+    if (!s) {
+      console.error("smelltest spend: no usage found in that transcript");
+      process.exit(2);
+    }
+    if (has("--json")) console.log(JSON.stringify(s, null, 2));
+    else console.log(`smelltest spend: ${renderSpend(s, cfg.budget.ceilingUsd)}`);
+    if (has("--ci") && cfg.budget.ceilingUsd > 0 && s.usd >= cfg.budget.ceilingUsd) process.exit(1);
+    return;
+  }
 
   const sub = argv.find((a) => a === "arm" || a === "disarm" || a === "status");
   if (sub === "arm") {

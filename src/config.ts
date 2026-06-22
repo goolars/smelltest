@@ -11,6 +11,13 @@ export interface Config {
     oscillationGuard: boolean;
     maxMinutes: number;
   };
+  // The spend governor: when armed and cumulative session cost (a client-side ESTIMATE) crosses
+  // ceilingUsd, the Stop gate allows the stop with a loud receipt. A token-equivalent budget, not
+  // your literal bill. Set ceilingUsd: 0 to disable the $ brake (the loop fuse stays on).
+  budget: {
+    enabled: boolean;
+    ceilingUsd: number;
+  };
   // claim kind -> phrases that signal it. A marginally-better-than-naive lexeme scan, NOT
   // robustness: a neutral completion ("the handler now returns 200") evades it by design.
   // The residual evasion rate is measured by eval/run.ts, not asserted away.
@@ -31,6 +38,7 @@ export interface Config {
 
 export const DEFAULTS: Config = {
   bounds: { maxRevisions: 2, absoluteIterationCeiling: 4, oscillationGuard: true, maxMinutes: 30 },
+  budget: { enabled: true, ceilingUsd: 10 },
   claimLexicon: {
     implemented: [
       "implemented",
@@ -230,6 +238,15 @@ function validateConfig(cfg: Config): Config {
   cfg.disabledCodes = Array.isArray(cfg.disabledCodes)
     ? cfg.disabledCodes.filter((x): x is string => typeof x === "string")
     : [];
+  // A malformed budget must not crash the gate or silently disable the cap: coerce to safe values.
+  const b = cfg.budget && typeof cfg.budget === "object" ? cfg.budget : DEFAULTS.budget;
+  cfg.budget = {
+    enabled: typeof b.enabled === "boolean" ? b.enabled : DEFAULTS.budget.enabled,
+    ceilingUsd:
+      typeof b.ceilingUsd === "number" && Number.isFinite(b.ceilingUsd) && b.ceilingUsd >= 0
+        ? b.ceilingUsd
+        : DEFAULTS.budget.ceilingUsd,
+  };
   return cfg;
 }
 

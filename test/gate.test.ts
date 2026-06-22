@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { DEFAULTS } from "../src/config.ts";
-import { decideStop } from "../src/gate.ts";
+import { type LedgerState, decideStop } from "../src/gate.ts";
 import type { Verdict } from "../src/types.ts";
 
 const warn: Verdict = {
@@ -14,33 +14,50 @@ const warn: Verdict = {
 };
 const pass: Verdict = { rung: "pass", findings: [], notChecked: [], codes: [], verifiedCheckmark: false };
 
+// state factory — spendUsd defaults to null (governor inactive) unless a test sets it.
+const st = (p: Partial<LedgerState> = {}): LedgerState => ({
+  used: 0,
+  recentBlocks: 0,
+  lastBlockCodes: null,
+  spendUsd: null,
+  ...p,
+});
+
 test("decideStop: a warn with no prior blocks -> block", () => {
-  assert.equal(decideStop({ used: 0, recentBlocks: 0, lastBlockCodes: null }, warn, DEFAULTS), "block");
+  assert.equal(decideStop(st(), warn, DEFAULTS), "block");
 });
 test("decideStop: a pass verdict -> allow_pass", () => {
-  assert.equal(decideStop({ used: 0, recentBlocks: 0, lastBlockCodes: null }, pass, DEFAULTS), "allow_pass");
+  assert.equal(decideStop(st(), pass, DEFAULTS), "allow_pass");
 });
 test("decideStop: at the per-session cap -> allow_cap", () => {
-  assert.equal(
-    decideStop({ used: DEFAULTS.bounds.maxRevisions, recentBlocks: 0, lastBlockCodes: null }, warn, DEFAULTS),
-    "allow_cap",
-  );
+  assert.equal(decideStop(st({ used: DEFAULTS.bounds.maxRevisions }), warn, DEFAULTS), "allow_cap");
 });
 test("decideStop: same finding as the last block -> allow_oscillation", () => {
   assert.equal(
-    decideStop({ used: 1, recentBlocks: 1, lastBlockCodes: ["done.no_substance"] }, warn, DEFAULTS),
+    decideStop(st({ used: 1, recentBlocks: 1, lastBlockCodes: ["done.no_substance"] }), warn, DEFAULTS),
     "allow_oscillation",
   );
 });
 test("decideStop: session-independent ceiling -> allow_ceiling", () => {
   assert.equal(
-    decideStop(
-      { used: 0, recentBlocks: DEFAULTS.bounds.absoluteIterationCeiling, lastBlockCodes: null },
-      warn,
-      DEFAULTS,
-    ),
+    decideStop(st({ recentBlocks: DEFAULTS.bounds.absoluteIterationCeiling }), warn, DEFAULTS),
     "allow_ceiling",
   );
+});
+
+test("decideStop: spend over the ceiling -> allow_budget, checked FIRST (even over a would-be block)", () => {
+  // A warn would normally block; but cumulative spend >= ceiling means STOP NOW, not nag-and-spend.
+  assert.equal(decideStop(st({ spendUsd: DEFAULTS.budget.ceilingUsd }), warn, DEFAULTS), "allow_budget");
+  assert.equal(decideStop(st({ spendUsd: DEFAULTS.budget.ceilingUsd + 5 }), pass, DEFAULTS), "allow_budget");
+});
+test("decideStop: spend under the ceiling -> normal flow (block)", () => {
+  assert.equal(decideStop(st({ spendUsd: DEFAULTS.budget.ceilingUsd - 0.01 }), warn, DEFAULTS), "block");
+});
+test("decideStop: the $ brake is opt-out (disabled or ceiling 0) without touching the loop fuse", () => {
+  const disabled = { ...DEFAULTS, budget: { enabled: false, ceilingUsd: 10 } };
+  assert.equal(decideStop(st({ spendUsd: 999 }), warn, disabled), "block");
+  const zero = { ...DEFAULTS, budget: { enabled: true, ceilingUsd: 0 } };
+  assert.equal(decideStop(st({ spendUsd: 999 }), warn, zero), "block");
 });
 
 test("decideStop: looping the real policy caps the loop (no runaway)", () => {
@@ -55,7 +72,7 @@ test("decideStop: looping the real policy caps the loop (no runaway)", () => {
       codes: [`f${turn}`],
       findings: [{ code: `f${turn}`, severity: "warn", message: "x" }],
     };
-    const d = decideStop({ used, recentBlocks: blocks, lastBlockCodes: lastCodes }, v, DEFAULTS);
+    const d = decideStop(st({ used, recentBlocks: blocks, lastBlockCodes: lastCodes }), v, DEFAULTS);
     if (d !== "block") break;
     used++;
     blocks++;

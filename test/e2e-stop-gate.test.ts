@@ -90,6 +90,50 @@ test("e2e: drives the maxRevisions cap end-to-end (oscillation disabled via proj
   cleanup(repo, work);
 });
 
+test("e2e: spend over the ceiling -> allow_budget receipt (the governor, through the real hook)", () => {
+  const { repo, work } = setup();
+  execFileSync(process.execPath, [CLI, "--root", repo, "arm"]);
+  // Tiny per-repo ceiling so a single real-costed turn trips it (also exercises project config).
+  fs.writeFileSync(
+    path.join(repo, ".smelltest", "config.json"),
+    JSON.stringify({ budget: { enabled: true, ceilingUsd: 0.0001 } }),
+  );
+  // A transcript with a costed assistant turn (opus, 5k in / 1k out ≈ $0.15 >> ceiling).
+  const transcript = path.join(work, "spend.jsonl");
+  fs.writeFileSync(
+    transcript,
+    `${JSON.stringify({
+      type: "assistant",
+      requestId: "r1",
+      message: {
+        id: "m1",
+        role: "assistant",
+        model: "claude-opus-4-8",
+        usage: { input_tokens: 5000, output_tokens: 1000 },
+        content: [{ type: "text", text: "All done." }],
+      },
+    })}\n`,
+  );
+  const input = JSON.stringify({
+    session_id: "S",
+    hook_event_name: "Stop",
+    transcript_path: transcript,
+    cwd: repo,
+  });
+
+  const r = runHook(repo, input);
+  assert.doesNotMatch(
+    r.stdout,
+    /"decision":"block"/,
+    "the $ brake ALLOWS the stop — never blocks-and-spends-more",
+  );
+  assert.match(r.stdout, /spend ceiling/, "emits the spend-ceiling receipt");
+  assert.match(r.stdout, /estimate/i, "the receipt is honestly framed as an estimate");
+  const ledger = fs.readFileSync(path.join(repo, ".smelltest", "ledger.jsonl"), "utf8");
+  assert.match(ledger, /"event":"allow_budget"/, "ledger records allow_budget");
+  cleanup(repo, work);
+});
+
 test("e2e: inert when disarmed (advisory by default)", () => {
   const { repo, work, input } = setup();
   const r = runHook(repo, input); // never armed
