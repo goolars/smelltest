@@ -168,3 +168,18 @@ test("config: a project's .smelltest/config.json overrides DEFAULTS (the per-rep
   assert.equal(cfg.bounds.oscillationGuard, DEFAULTS.bounds.oscillationGuard, "untouched keys keep DEFAULTS");
   fs.rmSync(project, { recursive: true, force: true });
 });
+
+test("config: a malformed bounds (typo'd maxRevisions) coerces to a number — the fuse can't be NaN'd into looping", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "smelltest-badbounds-"));
+  fs.mkdirSync(path.join(project, ".smelltest"));
+  fs.writeFileSync(
+    path.join(project, ".smelltest", "config.json"),
+    JSON.stringify({ bounds: { maxRevisions: "two", absoluteIterationCeiling: null } }),
+  );
+  const cfg = loadConfig(undefined, project);
+  assert.equal(typeof cfg.bounds.maxRevisions, "number");
+  assert.ok(Number.isFinite(cfg.bounds.maxRevisions), "maxRevisions is finite, never NaN");
+  assert.equal(cfg.bounds.maxRevisions, DEFAULTS.bounds.maxRevisions, "bad value reverts to default");
+  assert.equal(cfg.bounds.absoluteIterationCeiling, DEFAULTS.bounds.absoluteIterationCeiling);
+  fs.rmSync(project, { recursive: true, force: true });
+});

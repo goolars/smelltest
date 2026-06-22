@@ -1,18 +1,32 @@
 {
-  "//": "Pinned price snapshot for the deterministic spend governor. Prices are USD PER TOKEN. The schema/algorithm follows LiteLLM's model_prices_and_context_window.json (MIT, BerriAI/litellm) — re-implemented idea-only, see CREDITS.md. Figures are Anthropic's public list prices as of capturedAt; they DO go stale — a new model not matched here resolves to a notChecked gap, never a silent $0. This is an estimate, not your bill.",
+  "//": "Pinned price snapshot for the deterministic spend governor. Prices are USD PER TOKEN, verified 2026-06-22 against Anthropic's current published list prices. The schema follows LiteLLM's model_prices_and_context_window.json (MIT, BerriAI/litellm) — re-implemented idea-only, see CREDITS.md. Current models are flat-priced (no long-context premium). Prices DO go stale; a model not matched here resolves to a notChecked gap, never a silent $0. This is an estimate, not your bill; on Pro/Max it is a token-equivalent budget.",
   "capturedAt": "2026-06-22",
   "currency": "USD",
   "unit": "per_token",
-  "source": "Anthropic public pricing; schema after github.com/BerriAI/litellm (MIT)",
-  "note": "1h cache writes are priced at input x 2 (computed in cost.ts). Matching is longest-prefix over `families`.",
+  "source": "Anthropic published list prices (verified 2026-06-22); schema after github.com/BerriAI/litellm (MIT)",
+  "note": "1h cache writes are priced at input x 2 (computed in cost.ts). Matching is longest-prefix over `families`. Cache write (5m) = 1.25x input; cache read = 0.1x input.",
   "models": {},
   "families": [
     {
+      "prefix": "claude-fable-5",
+      "in": 0.00001,
+      "out": 0.00005,
+      "cacheWrite5m": 0.0000125,
+      "cacheRead": 0.000001
+    },
+    {
+      "prefix": "claude-mythos-5",
+      "in": 0.00001,
+      "out": 0.00005,
+      "cacheWrite5m": 0.0000125,
+      "cacheRead": 0.000001
+    },
+    {
       "prefix": "claude-opus-4",
-      "in": 0.000015,
-      "out": 0.000075,
-      "cacheWrite5m": 0.00001875,
-      "cacheRead": 0.0000015
+      "in": 0.000005,
+      "out": 0.000025,
+      "cacheWrite5m": 0.00000625,
+      "cacheRead": 0.0000005
     },
     {
       "prefix": "claude-3-opus",
@@ -44,10 +58,10 @@
     },
     {
       "prefix": "claude-haiku-4",
-      "in": 0.0000008,
-      "out": 0.000004,
-      "cacheWrite5m": 0.000001,
-      "cacheRead": 0.00000008
+      "in": 0.000001,
+      "out": 0.000005,
+      "cacheWrite5m": 0.00000125,
+      "cacheRead": 0.0000001
     },
     {
       "prefix": "claude-3-5-haiku",

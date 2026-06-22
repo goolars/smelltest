@@ -19,13 +19,16 @@ export function ledgerFile(root: string, cfg: Config): string {
   return path.join(root, cfg.ledgerPath || ".smelltest/ledger.jsonl");
 }
 
-export function append(root: string, cfg: Config, entry: Omit<LedgerEntry, "ts">): void {
+// Returns true if the entry was persisted. The caller uses this to FAIL OPEN: a block we can't
+// record is a block we can't bound, so the gate must allow rather than block on a write failure.
+export function append(root: string, cfg: Config, entry: Omit<LedgerEntry, "ts">): boolean {
   try {
     const p = ledgerFile(root, cfg);
     fs.mkdirSync(path.dirname(p), { recursive: true });
     fs.appendFileSync(p, `${JSON.stringify({ ts: new Date().toISOString(), ...entry })}\n`);
+    return true;
   } catch {
-    // A ledger write must never break the gate.
+    return false; // never break the gate — the caller decides (fail open on a block we can't persist)
   }
 }
 

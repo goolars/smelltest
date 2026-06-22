@@ -84,8 +84,13 @@ async function main(): Promise<void> {
         }
         return process.exit(0);
       default: {
-        // block
-        ledger.append(root, cfg, { event: "block", sessionId, codes: verdict.codes });
+        // block — but only if we can RECORD it. A block we can't persist is a block we can't
+        // bound (state.used would never increment), so an unwritable ledger must fail OPEN.
+        if (!ledger.append(root, cfg, { event: "block", sessionId, codes: verdict.codes })) {
+          return allow(
+            "smelltest: cannot persist the retry bound — failing open (a block it can't record can't be bounded).",
+          );
+        }
         const reason = [
           "smelltest blocked this stop — the completion claim is not backed by the diff:",
           ...verdict.findings.map((f) => `  • [${f.code}] ${f.message}`),

@@ -33,6 +33,25 @@ hook receives a cost field. smelltest now closes it.
   branch, and an e2e driving the real hook to an `allow_budget` receipt. Sources attributed
   idea-only in CREDITS (LiteLLM, ccusage — both MIT).
 
+**Review-board fixes (an adversarial board ran on the v0.4 build and found real defects)**
+- **Corrected the price snapshot** — it had shipped legacy Claude-3-era figures: Opus 4.x was **3×
+  too high** ($15/$75 → the correct **$5/$25** per 1M) and Haiku 4.5 too low ($0.80/$4 → **$1/$5**),
+  while the file claimed they were current. Verified against Anthropic's published list; added Fable
+  5 / Mythos 5 ($10/$50). Re-derived the exact fixture (0.117255 → 0.047255).
+- **Pinned the prices independently of the fixture.** The exact-cost fixture is computed *from* the
+  snapshot, so it could never catch a wrong price; a new test asserts each family's per-1M price as a
+  hard literal, so a future drift fails CI.
+- **Fixed a real runaway: a typo'd `bounds` value looped forever.** `validateConfig` clamped `budget`
+  but not `bounds` — a non-numeric `maxRevisions` made `used >= NaN` always false, so the gate would
+  block every turn (the exact unbounded loop the fuse exists to prevent). Now coerced like `budget`.
+- **Restored fail-open on an unwritable ledger.** A persistent ledger-write failure left `used` at 0
+  → block forever; `ledger.append` now reports failure and the block branch fails *open*.
+- **De-overclaimed the headline.** The README sold the budget brake with active-halt verbs
+  ("hard-stops a runaway agent"); the mechanism is an *allow* at the turn boundary, not a mid-flight
+  interrupt. Reworded to say exactly that, and split the in-loop single-session bound from the
+  multi-invocation `spend --ci` case (the in-loop hook can't see the cross-invocation `$313/$6k`
+  daemon loop). Tests 39 → 41.
+
 ## v0.3.0 — hardening (research-driven, license-clean)
 
 Driven by a deep source read of high-star comparables (tdd-guard, pre-commit, lefthook,

@@ -54,8 +54,8 @@ test("e2e: armed gate blocks a false-done, then the oscillation guard releases i
   assert.match(r1.stdout, /"decision":"block"/, "call 1 emits decision:block");
   assert.match(r1.stdout, /done\.no_substance/, "block reason names done.no_substance");
 
-  // Identical claim again -> same finding code -> the oscillation guard (the stricter brake,
-  // ahead of the per-session cap) releases the stop rather than thrashing on the same finding.
+  // Identical claim again -> same finding code -> the oscillation guard (checked just before the
+  // final block, after the cap/ceiling) releases the stop rather than thrashing on the same finding.
   const r2 = runHook(repo, input);
   assert.doesNotMatch(r2.stdout, /"decision":"block"/, "call 2 allows — the loop is bounded");
 
@@ -98,7 +98,7 @@ test("e2e: spend over the ceiling -> allow_budget receipt (the governor, through
     path.join(repo, ".smelltest", "config.json"),
     JSON.stringify({ budget: { enabled: true, ceilingUsd: 0.0001 } }),
   );
-  // A transcript with a costed assistant turn (opus, 5k in / 1k out ≈ $0.15 >> ceiling).
+  // A transcript with a costed assistant turn (opus, 5k in / 1k out ≈ $0.05 >> the 0.0001 ceiling).
   const transcript = path.join(work, "spend.jsonl");
   fs.writeFileSync(
     transcript,

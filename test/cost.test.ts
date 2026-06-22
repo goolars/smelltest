@@ -17,13 +17,25 @@ test("resolvePrice: exact-then-longest-prefix family match; unknown -> null", ()
   if (!prices) return;
   assert.equal(
     resolvePrice("claude-opus-4-8", prices)?.in,
-    0.000015,
+    0.000005,
     "new opus point release prices off the opus-4 family",
   );
   assert.equal(resolvePrice("claude-sonnet-4-6", prices)?.out, 0.000015, "sonnet-4 family");
   assert.equal(resolvePrice("claude-3-5-haiku-20241022", prices)?.in, 0.0000008, "3-5-haiku family");
-  assert.equal(resolvePrice("fable-5-unknown", prices), null, "unknown model -> null (fail-soft)");
+  assert.equal(resolvePrice("totally-made-up-model", prices), null, "unknown model -> null (fail-soft)");
   assert.equal(resolvePrice("<synthetic>", prices), null, "synthetic -> null");
+});
+
+// Pins the PRICES to hard literals, independent of the fixture (which is derived FROM the
+// snapshot and so can't catch a wrong price). A figure that drifts from Anthropic's list fails CI.
+test("price snapshot pins to current Anthropic list prices ($/Mtok)", () => {
+  if (!prices) return;
+  assert.equal(resolvePrice("claude-opus-4-8", prices)?.in, 0.000005, "Opus 4.x = $5/Mtok in");
+  assert.equal(resolvePrice("claude-opus-4-8", prices)?.out, 0.000025, "Opus 4.x = $25/Mtok out");
+  assert.equal(resolvePrice("claude-sonnet-4-6", prices)?.in, 0.000003, "Sonnet 4.x = $3/Mtok in");
+  assert.equal(resolvePrice("claude-haiku-4-5", prices)?.in, 0.000001, "Haiku 4.5 = $1/Mtok in");
+  assert.equal(resolvePrice("claude-fable-5", prices)?.out, 0.00005, "Fable 5 = $50/Mtok out");
+  assert.equal(resolvePrice("claude-3-opus", prices)?.in, 0.000015, "legacy Opus 3 stays $15/Mtok");
 });
 
 test("costOfTurn: 1h cache writes price at input x 2", () => {
@@ -69,8 +81,8 @@ test("sessionCost: dedup by (id+requestId), exact total, fail-soft on unknown mo
   ];
   const s = sessionCost(entries, prices);
 
-  // A=0.01128, B=0.105, D=0.000975  => 0.117255  (C excluded; the A duplicate excluded)
-  assert.ok(Math.abs(s.usd - 0.117255) < 1e-9, `usd was ${s.usd}`);
+  // A=0.01128, B=0.035, D=0.000975  => 0.047255  (C excluded; the A duplicate excluded)
+  assert.ok(Math.abs(s.usd - 0.047255) < 1e-9, `usd was ${s.usd}`);
   assert.equal(s.turns, 4, "4 unique counted turns (the duplicate A is deduped, the user row ignored)");
   assert.equal(s.tokens, 5000, "priced tokens = 1800 + 3000 + 200 (C's 100 is unpriced, excluded)");
   assert.equal(s.notCheckedModels.length, 1, "one unpriced model");

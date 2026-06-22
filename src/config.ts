@@ -238,6 +238,20 @@ function validateConfig(cfg: Config): Config {
   cfg.disabledCodes = Array.isArray(cfg.disabledCodes)
     ? cfg.disabledCodes.filter((x): x is string => typeof x === "string")
     : [];
+  // A malformed `bounds` is the load-bearing one: a non-numeric maxRevisions makes the gate's
+  // `used >= NaN` comparison always false -> it would BLOCK forever (the exact runaway the fuse
+  // exists to prevent). Coerce every bound to a safe non-negative integer, the same way budget is.
+  const posInt = (x: unknown, d: number) =>
+    typeof x === "number" && Number.isFinite(x) && x >= 0 ? Math.floor(x) : d;
+  const bd = cfg.bounds && typeof cfg.bounds === "object" ? cfg.bounds : DEFAULTS.bounds;
+  cfg.bounds = {
+    maxRevisions: posInt(bd.maxRevisions, DEFAULTS.bounds.maxRevisions),
+    absoluteIterationCeiling: posInt(bd.absoluteIterationCeiling, DEFAULTS.bounds.absoluteIterationCeiling),
+    oscillationGuard:
+      typeof bd.oscillationGuard === "boolean" ? bd.oscillationGuard : DEFAULTS.bounds.oscillationGuard,
+    maxMinutes: posInt(bd.maxMinutes, DEFAULTS.bounds.maxMinutes),
+  };
+
   // A malformed budget must not crash the gate or silently disable the cap: coerce to safe values.
   const b = cfg.budget && typeof cfg.budget === "object" ? cfg.budget : DEFAULTS.budget;
   cfg.budget = {

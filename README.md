@@ -9,9 +9,9 @@
 ![tests](https://img.shields.io/badge/tests-39%20passing-success.svg)
 ![eval](https://img.shields.io/badge/eval-0%20FP%20on%2035--case%20corpus-success.svg)
 
-> **Point smelltest at a runaway agent and it hard-stops it at a token/$ ceiling — and catches the
-> agent's fake "done" against your git diff on the way out.** The only Claude Code hook that
-> *enforces* a spend cap in-loop. Model-free, no network, zero dependencies.
+> **A Claude Code Stop hook that ends your session at a token/$ ceiling and catches the agent's
+> fake "done" against your git diff — model-free, and it can't loop doing it.** The only hook that
+> gates a session on estimated spend at all. No second LLM, no network, zero dependencies.
 
 ![smelltest blocking a false completion, then allowing after the bound](docs/demo.svg)
 
@@ -29,10 +29,11 @@ nothing blocks until you run `npx smelltest arm`. (Inside Claude Code you can in
 
 ## What you get
 
-- 💸 **It stops the bleed.** When your session's cumulative spend crosses a ceiling, smelltest
-  **stops the agent** — the only Claude Code hook that *enforces* a budget in-loop (every other tool
-  just reports after the fact). Computed deterministically from the transcript; an honest *estimate*,
-  not your bill.
+- 💸 **It caps the spend.** At each turn boundary it tallies your session's estimated cost; once you
+  cross your ceiling it lets the turn end with a receipt instead of nudging the agent to spend more —
+  and `smelltest spend --ci` halts the next headless `claude -p` for the multi-call case. No other
+  Claude Code hook gates a session on $ at all. Computed deterministically from the transcript; an
+  honest *estimate*, not your bill.
 - 🚫 **It catches the lie.** Claude claims *"done — tests pass"* but the diff added nothing real, or
   quietly skipped tests? You get a warning, not a silent green — graded from your **`git diff`**,
   never a second model's opinion.
@@ -54,11 +55,20 @@ one — the fuse is the part that always holds.
 
 ## Cap your spend — the governor
 
-`claude` has no in-session `--max-cost`; the runaways that burned people **$313 in 8.5h** and **$6k
-overnight** were loops where each call looked fine but the *cumulative* spend didn't. smelltest adds
-the missing brake: when armed and your session's estimated cost crosses `budget.ceilingUsd` (default
-`$10`), the Stop gate **stops the turn** with a receipt. It's checked first and only ever *shortens*
-a session — so the breaker provably can't become the runaway it guards.
+`claude` has no client-side cost cap. smelltest adds two deterministic brakes, and is precise about
+what each one can and can't do:
+
+**Within a single long session.** When armed and your session's estimated cost crosses
+`budget.ceilingUsd` (default `$10`), the Stop gate stops *forcing continuations* and lets the turn
+end with a receipt, instead of nudging the agent to spend more. It's checked first and only ever
+*shortens* a session, so the breaker provably can't become the runaway it guards. A Stop hook fires
+at turn boundaries, so this bounds a session **at its turn ends — it is not a mid-turn kill switch.**
+
+**Across many headless invocations.** The *$313-in-8.5h* and *$6k-overnight* runaways were `claude -p`
+daemon loops where each call looked fine but the *cumulative* spend didn't — and an in-loop Stop hook
+**can't see across invocations** (native `--max-budget-usd` only bounds one call). `smelltest spend
+--ci` is the brake for that case: it exits non-zero over the ceiling, so your wrapper script halts the
+**next** invocation.
 
 See it on your own latest session in one command — no install, no arming:
 
@@ -66,9 +76,6 @@ See it on your own latest session in one command — no install, no arming:
 npx smelltest spend --latest
 # smelltest spend: ~$0.84 / 412k tokens (est.) — ceiling $10.00, 8% used
 ```
-
-`--ci` exits non-zero over the ceiling, so an external script can hard-halt the **next** headless
-`claude -p` invocation (the orchestrated-watchdog case native `--max-budget-usd` doesn't cover).
 
 **Honest about the number** — this is the whole credibility of the feature, so it's stated plainly:
 it is a **client-side estimate** (tokens × a pinned price snapshot) that can drift from your real
