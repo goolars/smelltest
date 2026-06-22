@@ -92,8 +92,12 @@ function tokensOf(usage: any): Tokens {
     cacheWrite1h: cc ? num(cc.ephemeral_1h_input_tokens) : 0,
     cacheRead: num(usage.cache_read_input_tokens),
   };
-  const flatTotal = flat.input + flat.output + flat.cacheWrite5m + flat.cacheWrite1h + flat.cacheRead;
-  if (flatTotal === 0 && Array.isArray(usage.iterations)) {
+  // Gate on the SUBSTANTIVE classes only (NOT cacheWrite1h): on some rows every substantive flat
+  // field is 0 while a stray 1h-write marker sits on the parent and the real per-call counts live
+  // in usage.iterations[]. Including cw1h here made flatTotal != 0, so the fallback never fired and
+  // those rows undercounted by the whole iterations payload (a false LOW, which we forbid).
+  const flatSubstantive = flat.input + flat.output + flat.cacheWrite5m + flat.cacheRead;
+  if (flatSubstantive === 0 && Array.isArray(usage.iterations)) {
     const sum: Tokens = { input: 0, output: 0, cacheWrite5m: 0, cacheWrite1h: 0, cacheRead: 0 };
     for (const it of usage.iterations) {
       const t = tokensOf(it); // iterations carry the same usage shape
@@ -103,6 +107,8 @@ function tokensOf(usage: any): Tokens {
       sum.cacheWrite1h += t.cacheWrite1h;
       sum.cacheRead += t.cacheRead;
     }
+    // Keep the parent's 1h-write marker if the iterations don't carry one — never drop real tokens.
+    sum.cacheWrite1h = Math.max(sum.cacheWrite1h, flat.cacheWrite1h);
     return sum;
   }
   return flat;

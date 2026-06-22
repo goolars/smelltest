@@ -1,12 +1,11 @@
 # smelltest
 
-<!-- After the first push + green CI run, uncomment this badge:
-     [![CI](https://github.com/goolars/smelltest/actions/workflows/ci.yml/badge.svg)](https://github.com/goolars/smelltest/actions/workflows/ci.yml) -->
+[![CI](https://github.com/goolars/smelltest/actions/workflows/ci.yml/badge.svg)](https://github.com/goolars/smelltest/actions/workflows/ci.yml)
 ![license](https://img.shields.io/badge/license-MIT-blue.svg)
 ![types](https://img.shields.io/badge/TypeScript-strict-3178c6.svg)
 ![runtime deps](https://img.shields.io/badge/runtime%20deps-0-success.svg)
 ![node](https://img.shields.io/badge/node-%E2%89%A518-339933.svg)
-![tests](https://img.shields.io/badge/tests-39%20passing-success.svg)
+![tests](https://img.shields.io/badge/tests-43%20passing-success.svg)
 ![eval](https://img.shields.io/badge/eval-0%20FP%20on%2035--case%20corpus-success.svg)
 
 > **A Claude Code Stop hook that ends your session at a token/$ ceiling and catches the agent's
@@ -142,7 +141,7 @@ Either way you get `/smell` (advisory re-grade), `/smell-loop on` (arm bounded e
 
 ```bash
 git clone <repo> && cd smelltest && npm install
-node --test            # 39 tests across 5 files incl. the halt-proof, the exact-cost fixture + e2e
+node --test            # 43 tests across 5 files incl. the halt-proof, the exact-cost fixture + e2e
 node eval/run.ts       # precision / recall / FN floor over the adversarial corpus
 node src/cli.ts spend --latest   # estimated $ / tokens for your newest session
 npm run demo           # watch the real fuse: block -> block -> allow (cap reached)
@@ -238,7 +237,7 @@ src/                    types · config · ledger(fuse) · cost(spend) · claims
 hooks/                  stop-gate.ts · note-blind-edit.ts · hooks.json
 pricing/                litellm-snapshot.json (pinned, dated price table)
 eval/                   run.ts · demo.mjs · corpus/cases.json (adversarial)
-test/                   smell · gate · evidence · cost · e2e-stop-gate   (39 tests, node --test)
+test/                   smell · gate · evidence · cost · e2e-stop-gate   (43 tests, node --test)
 .github/workflows/ci.yml  tsconfig.json  biome.json  SMOKE-TEST.md  docs/  research/
 ```
 

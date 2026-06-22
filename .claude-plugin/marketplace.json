@@ -5,7 +5,7 @@
     {
       "name": "smelltest",
       "source": "./",
-      "description": "A Claude Code hook that hard-stops your agent at a token/$ budget and catches its fake \"done\" against the git diff — and can't loop or burn your tokens doing it.",
+      "description": "A Claude Code hook that ends your session at a token/$ ceiling and flags fake \"done\" against the git diff — model-free, and it can't loop doing it.",
       "license": "MIT",
       "category": "development",
       "keywords": ["hooks", "verification", "guardrails", "loop-safety", "self-critique"]

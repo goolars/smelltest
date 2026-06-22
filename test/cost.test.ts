@@ -50,6 +50,27 @@ test("costOfTurn: 1h cache writes price at input x 2", () => {
   assert.ok(Math.abs((usd ?? 0) - 0.000975) < 1e-12, `got ${usd}`);
 });
 
+test("costOfTurn: split row (flat substantive 0 + stray 1h marker) counts usage.iterations[], not the marker", () => {
+  if (!prices) return;
+  // Real-transcript shape: parent has only a 355-token 1h-write; the real tokens are in iterations.
+  const u = {
+    cache_creation: { ephemeral_1h_input_tokens: 355 },
+    iterations: [{ input_tokens: 610, output_tokens: 1402, cache_read_input_tokens: 990975 }],
+  };
+  const { usd, tokens } = costOfTurn(u, "claude-sonnet-4-6", prices);
+  // tokens = 610 + 1402 + 990975 (cacheRead) + 355 (1h marker kept) = 993342  (NOT 355)
+  assert.equal(tokens, 993342, "counts the iterations payload, never just the stray marker");
+  // 610*3e-6 + 1402*15e-6 + 990975*0.3e-6 + 355*(3e-6*2)
+  assert.ok(Math.abs((usd ?? 0) - 0.3222825) < 1e-9, `got ${usd}`);
+});
+
+test("costOfTurn: when flat IS populated, iterations[] is ignored (no double-count)", () => {
+  if (!prices) return;
+  const u = { input_tokens: 1000, iterations: [{ input_tokens: 9999 }] };
+  const { tokens } = costOfTurn(u, "claude-opus-4-8", prices);
+  assert.equal(tokens, 1000, "the flat rollup wins; iterations are not added on top");
+});
+
 test("sessionCost: dedup by (id+requestId), exact total, fail-soft on unknown model", () => {
   if (!prices) return;
   const turn = (id: string, req: string, model: string, usage: unknown) => ({

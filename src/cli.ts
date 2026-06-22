@@ -131,7 +131,10 @@ function main(): void {
     const i = argv.indexOf(f);
     return i >= 0 ? argv[i + 1] : null;
   };
-  if (argv.includes("init")) return runInit(argv);
+  if (argv.includes("init")) {
+    runInit(argv);
+    return;
+  }
 
   const root = get("--root") || projectRoot();
   // Pass `root` as the project layer so a CLI re-grade honors this repo's .smelltest/config.json

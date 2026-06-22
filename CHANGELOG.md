@@ -50,7 +50,20 @@ hook receives a cost field. smelltest now closes it.
   ("hard-stops a runaway agent"); the mechanism is an *allow* at the turn boundary, not a mid-flight
   interrupt. Reworded to say exactly that, and split the in-loop single-session bound from the
   multi-invocation `spend --ci` case (the in-loop hook can't see the cross-invocation `$313/$6k`
-  daemon loop). Tests 39 → 41.
+  daemon loop).
+
+**Ship-gate fixes (a final board ran the gate itself and blocked the push)**
+- **The gate was actually red.** `biome check .` failed on `src/cli.ts` (`noVoidTypeReturn`) — and a
+  prior commit had *claimed* "gate green" without re-running it (a buggy `| tail -1` check masked the
+  error). Fixed the lint; now gated on the real exit code, not a piped tail.
+- **Killed the `hard-stops your agent` overclaim where it actually shipped** — it was still in
+  `package.json` / `plugin.json` / `marketplace.json` (the npm + plugin install surfaces); the README
+  fix hadn't reached them. All three now match the honest README wording.
+- **Cost engine undercount fixed.** The `iterations[]` fallback gated on the *total* flat tokens, so a
+  stray 1h-write marker on a parent row stopped it from firing — a live row counted 990,975 cache-read
+  tokens as 355. Now gates on the *substantive* classes and keeps the parent 1h marker; two tests pin
+  the split-row case and prove no double-count. A false *low* is forbidden by the project's own rule.
+- Tests 39 → 43. CI badge added (repo is now live at `goolars/smelltest`).
 
 ## v0.3.0 — hardening (research-driven, license-clean)
 
