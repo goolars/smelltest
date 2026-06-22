@@ -9,16 +9,27 @@
 ![tests](https://img.shields.io/badge/tests-30%20passing-success.svg)
 ![eval](https://img.shields.io/badge/eval-0%20FP%20on%2035--case%20corpus-success.svg)
 
-Two things go wrong at the end of an agent's turn, and both cost you real money:
+**A completion-forcing Stop hook is a known Claude Code pattern — and a known footgun.** Users report
+ones that run for the better part of an hour and eat an entire session's quota before anything breaks
+the cycle. A guardrail that loops on itself is worse than no guardrail.
 
-1. **It says it's done when it isn't.** "Implemented the feature. Tests pass." — but the diff
-   changed a comment, or weakened an assertion, or did nothing at all. Confidently-wrong-about-its-
-   own-work is the dominant *trust*-breaking theme across the corpus this was built from.
-2. **It can't stop.** An uncapped revise-and-retry loop quietly burns tokens until you notice the bill.
+**smelltest is the Stop hook that bounds its own loop first.** When it blocks the agent to force a
+fix, it blocks **at most `maxRevisions` times** (default 2) on the same finding, then allows the stop
+— append-only ledger, session-independent ceiling, oscillation guard, fail-open, zero network. The
+guardrail provably **can't become the runaway it's guarding against.** That is the rock-solid core:
+it cannot loop, and it cannot quietly burn your tokens.
 
-**smelltest** is a model-free, zero-dependency Claude Code **Stop hook** that addresses both. It
-**bounds its own retries** with a self-owned fuse, and it **re-grades "done / tests pass" against
-the structure of the actual `git diff`** — no LLM, no network, on every Stop. Advisory by default;
+**Then it checks the claim.** When Claude says *"done — tests pass,"* smelltest re-grades that against
+your **real `git diff`** before the turn ends: if the diff added nothing substantive, or quietly
+skipped tests, you get a warning — not a silent green. You can't fix an agent that *reports tests as
+passing on broken code* — the most-repeated complaint in the corpus this was built from — by asking
+the same model to grade its own homework.
+
+**Honest about the limits:** by default it **warns, it does not hard-block**, and a determined agent
+can still evade detection (`--no-verify`, padded inert lines). It catches the *lazy* false-"done,"
+not the *deliberately deceptive* one — the fuse is the part that always holds.
+
+**No model. No API. No network — it reads your diff, it doesn't ask Claude.** Advisory by default;
 bounded enforcement is one command away.
 
 ![smelltest blocking a false completion, then allowing after the bound](docs/demo.svg)
@@ -26,9 +37,11 @@ bounded enforcement is one command away.
 <sub>Composite of real `smelltest` output (every line is a string the gate actually emits) — watch
 it live against a throwaway repo with **`npm run demo`**.</sub>
 
-> Built research-first (a 775-observation complaint taxonomy, board-reviewed) and rebuilt under
-> adversarial review — the detection was upgraded from a lexeme scan to a structural diff check.
-> See [`research/RESEARCH.md`](research/RESEARCH.md) and the honest numbers below.
+> Built research-first (a 775-observation complaint taxonomy, board-reviewed), rebuilt under
+> adversarial review, and **re-validated against live 2026 `anthropics/claude-code` issues** — which
+> is where the "guardrail that loops" framing above comes from. See
+> [`research/RESEARCH.md`](research/RESEARCH.md), [`research/live-2026-validation.md`](research/live-2026-validation.md),
+> and the honest numbers below.
 
 ## The headline: a self-owned runaway-loop fuse
 

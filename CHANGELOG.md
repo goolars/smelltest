@@ -49,6 +49,16 @@ reviewdog, parse-diff, gitdiff-parser, eslint-plugin-jest, and the framework doc
 - Corrected README over-claims the board flagged: dropped a "single most-reported" superlative the
   taxonomy doesn't support, fixed a wrong CI path, removed the broken `OWNER`-placeholder CI badge.
 
+**Evidence-driven repositioning (re-validated against live 2026 `claude-code` issues)**
+- A web research fan-out across the live issue tracker, Reddit, HN, X and blogs (captured in
+  [`research/live-2026-validation.md`](research/live-2026-validation.md)) showed the **bounded fuse**
+  is the strongest, most-defensible hook — users are filing feature requests for exactly that
+  primitive and report *Stop hooks that loop on themselves and eat a session's quota*. README +
+  plugin description rewritten **fuse-first**: "the guardrail that can't become the runaway it's
+  guarding against," with the diff re-grade demoted to the honest "and then it checks the claim
+  (warn, not a silent green)." No new capability claimed — only the framing changed to match the
+  evidence and the code.
+
 **Deferred to a later release (recorded honestly, not hidden)**
 - Stub-bodied-declaration rule (retire the `def …: pass` FN floor) — highest FP risk; needs the
   FP-bait corpus to guard it first.
