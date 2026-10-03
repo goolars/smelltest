@@ -2,6 +2,12 @@
 
 ## v0.4.0 — the spend / runaway governor (research + board specced)
 
+## Unreleased
+
+**Added**
+- `smelltest spend` now warns on stderr when the pinned price snapshot is more than 90 days old, so a stale table can't pass as current. Pure helpers `snapshotAgeDays` and `stalenessNote` in `src/cost.ts` take `now` as an argument, so the engine still reads no clock. An undated or unparseable snapshot never triggers the warning.
+
+- 
 A web research fan-out + a 4-member board (staff eng / DevRel / OSS maintainer / skeptic)
 converged **unanimously** on this: the most-screamed-for, model-free-buildable, uncontested gap is
 an **in-loop spend cap**. Native `--max-budget-usd` bounds a *single* `claude -p`. The pain that
