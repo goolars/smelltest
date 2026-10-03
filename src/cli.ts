@@ -15,7 +15,7 @@ import os from "node:os";
 import path from "node:path";
 import url from "node:url";
 import { loadConfig, projectRoot } from "./config.ts";
-import { renderSpend } from "./cost.ts";
+import { renderSpend, stalenessNote } from "./cost.ts";
 import { buildEvidence, findLatestTranscript } from "./evidence.ts";
 import { renderVerdict, smell } from "./kernel.ts";
 import type { Evidence } from "./types.ts";
@@ -232,7 +232,11 @@ function main(): void {
       process.exit(2);
     }
     if (has("--json")) console.log(JSON.stringify(s, null, 2));
-    else console.log(`smelltest spend: ${renderSpend(s, cfg.budget.ceilingUsd)}`);
+    else {
+      console.log(`smelltest spend: ${renderSpend(s, cfg.budget.ceilingUsd)}`);
+      const stale = stalenessNote(s.capturedAt, new Date());
+      if (stale) console.error(`smelltest spend: warning: ${stale}`);
+    }
     if (has("--ci") && cfg.budget.ceilingUsd > 0 && s.usd >= cfg.budget.ceilingUsd) process.exit(1);
     return;
   }
