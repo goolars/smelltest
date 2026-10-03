@@ -4,7 +4,14 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { costOfTurn, loadPrices, resolvePrice, sessionCost } from "../src/cost.ts";
+import {
+  costOfTurn,
+  loadPrices,
+  resolvePrice,
+  sessionCost,
+  snapshotAgeDays,
+  stalenessNote,
+} from "../src/cost.ts";
 
 const prices = loadPrices();
 
@@ -124,4 +131,23 @@ test("sessionCost: null price table -> all zero, never throws (fail-soft)", () =
   );
   assert.equal(s.usd, 0);
   assert.equal(s.turns, 0);
+});
+
+test("snapshotAgeDays: whole days, clamped at 0, null for undated or garbage", () => {
+  const now = new Date("2026-10-03T12:00:00Z");
+  assert.equal(snapshotAgeDays("2026-06-22", now), 103);
+  assert.equal(snapshotAgeDays("2026-10-03", now), 0);
+  assert.equal(snapshotAgeDays("2027-01-01", now), 0, "a future date never goes negative");
+  assert.equal(snapshotAgeDays(undefined, now), null);
+  assert.equal(snapshotAgeDays("not-a-date", now), null);
+});
+
+test("stalenessNote: silent inside the window, loud past it, never fires on an unreadable date", () => {
+  const now = new Date("2026-10-03T12:00:00Z");
+  assert.equal(stalenessNote("2026-08-01", now), null, "63 days old is fresh enough");
+  assert.equal(stalenessNote("2026-07-05", now), null, "exactly 90 days is still inside the window");
+  assert.match(stalenessNote("2026-06-22", now) ?? "", /103 days old/);
+  assert.match(stalenessNote("2026-09-20", now, 7) ?? "", /13 days old/, "window is tunable");
+  assert.equal(stalenessNote(undefined, now), null);
+  assert.equal(stalenessNote("garbage", now), null);
 });
