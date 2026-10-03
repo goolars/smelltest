@@ -206,3 +206,27 @@ export function renderSpend(s: SpendInfo, ceilingUsd?: number): string {
   }
   return line;
 }
+
+// How old the pinned price snapshot is. Pure: the caller passes `now`, so the engine itself still
+// reads no clock. Returns null when the snapshot is undated or its date is unparseable (an
+// unreadable date is never reported as "fresh").
+export function snapshotAgeDays(capturedAt: string | undefined, now: Date): number | null {
+  if (!capturedAt) return null;
+  const t = Date.parse(capturedAt);
+  if (!Number.isFinite(t)) return null;
+  return Math.max(0, Math.floor((now.getTime() - t) / 86_400_000));
+}
+
+export const STALE_AFTER_DAYS = 90;
+
+// A one-line warning once the snapshot is older than `maxAgeDays`, else null. Prices go stale and
+// the estimate silently drifts, so the CLI says so instead of letting an old table pass as current.
+export function stalenessNote(
+  capturedAt: string | undefined,
+  now: Date,
+  maxAgeDays: number = STALE_AFTER_DAYS,
+): string | null {
+  const age = snapshotAgeDays(capturedAt, now);
+  if (age === null || age <= maxAgeDays) return null;
+  return `price snapshot is ${age} days old (captured ${capturedAt}) — this estimate may have drifted from current list prices`;
+}
